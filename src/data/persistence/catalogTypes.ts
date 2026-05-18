@@ -35,4 +35,17 @@ export type PersistedCatalogV1 = {
   likelihoodBands?: ScoringBandRow[];
 };
 
-export const CATALOG_STORAGE_KEY = "cra_proto_catalog_v2";
+/**
+ * Pooja WAL migration catalog: full scenario rows are supplied and `applyPersistedCatalog` skips graph regeneration.
+ */
+export type PersistedCatalogV3 = Omit<PersistedCatalogV1, "schemaVersion"> & {
+  schemaVersion: 3;
+  scenarios: MockScenario[];
+};
+
+export type PersistedCatalog = PersistedCatalogV1 | PersistedCatalogV3;
+
+export const CATALOG_STORAGE_KEY = "cra_proto_catalog_v3";
+
+/** Pre–schema-v3 snapshots; cleared with {@link resetCatalogStorage} so older blobs never shadow the bundled catalog. */
+export const LEGACY_CATALOG_STORAGE_KEY = "cra_proto_catalog_v2";

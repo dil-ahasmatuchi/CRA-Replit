@@ -22,7 +22,7 @@ const ASSET_TYPES: AssetType[] = [
   "IoT device",
 ];
 
-/** Short display names only — one unique title per catalog row (150 assets). */
+/** Short display names only — one unique title per catalog row. */
 const ASSET_NAMES: string[] = [
   "Customer Database Server",
   "Active Directory Service",
@@ -176,16 +176,17 @@ const ASSET_NAMES: string[] = [
   "Dev Test IoT Devices",
 ];
 
-/** 150 rows: short names, rotating types, criticality 2–5, USR 1–50, BU 1–52. */
+/** Default seed rows: short names, rotating types, criticality 2–5, USR 1–50, BU 1–52. */
 function buildRawRows(): AssetRow[] {
-  if (ASSET_NAMES.length !== 150) {
-    throw new Error("ASSET_NAMES must define exactly 150 unique titles (one per asset).");
+  const n = ASSET_NAMES.length;
+  if (n === 0) {
+    throw new Error("ASSET_NAMES must define at least one title.");
   }
   const out: AssetRow[] = [];
   const ownerCount = 50;
   const buCount = 52;
 
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < n; i++) {
     const assetType = ASSET_TYPES[i % ASSET_TYPES.length];
     const criticality = (2 + (i % 4)) as FivePointScaleValue;
     const ownerIdx = 1 + (i % ownerCount);

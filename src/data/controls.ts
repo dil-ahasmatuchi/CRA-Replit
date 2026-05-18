@@ -53,8 +53,9 @@ export function wireControlsToAssets(): void {
   }
 }
 
-/** 100 controls: each attached to one asset (rotating AST-001..AST-150), asset-centric. */
+/** 100 controls: each attached to one asset (rotating through the current asset catalog), asset-centric. */
 function buildControls(): MockControl[] {
+  const assetCount = Math.max(1, assets.length);
   const out: MockControl[] = [];
   const prefixes = [
     "Multi-factor authentication",
@@ -110,7 +111,7 @@ function buildControls(): MockControl[] {
   ];
 
   for (let i = 0; i < 100; i++) {
-    const assetNum = (i % 150) + 1;
+    const assetNum = (i % assetCount) + 1;
     const assetId = padId("AST", assetNum);
     const effectiveness = ((i % 5) + 1) as FivePointScaleValue;
     const name = `${prefixes[i % prefixes.length]} control`;
@@ -148,7 +149,8 @@ function normalizePersistedControl(c: MockControl, index: number): void {
   if (!Array.isArray(c.assetIds) || c.assetIds.length === 0) {
     const m = /^CTL-0*(\d+)$/i.exec(c.id);
     const n = m ? Math.max(1, parseInt(m[1]!, 10)) : index + 1;
-    c.assetIds = [padId("AST", ((n - 1) % 150) + 1)];
+    const mod = Math.max(1, assets.length);
+    c.assetIds = [padId("AST", ((n - 1) % mod) + 1)];
   }
   const raw = c.effectiveness;
   const ok = typeof raw === "number" && raw >= 1 && raw <= 5;

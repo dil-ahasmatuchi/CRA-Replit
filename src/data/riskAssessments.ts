@@ -7,6 +7,7 @@ import {
   assessmentScopedVulnerabilities,
 } from "./assessmentScopeRollup.js";
 import { users } from "./users.js";
+import { assets } from "./assets.js";
 import { markCatalogDirty } from "./persistence/catalogStore.js";
 import { scenarios } from "./scenarios.js";
 
@@ -97,13 +98,15 @@ export function computeAssessmentRollupForAssetIds(
   };
 }
 
-/** 3–7 asset indices in 1..150, deterministic per assessment index. */
+/** 3–7 asset indices in 1..assets.length, deterministic per assessment index. */
 function pickAssetIdxs(i: number): number[] {
-  const n = 3 + (i % 5);
+  const { length } = assets;
+  if (length === 0) return [];
+  const n = Math.min(3 + (i % 5), length);
   const acc = new Set<number>();
   let k = 0;
   while (acc.size < n) {
-    acc.add(1 + ((i * 19 + k * 41) % 150));
+    acc.add(1 + ((i * 19 + k * 41) % length));
     k += 1;
   }
   return [...acc].sort((a, b) => a - b);

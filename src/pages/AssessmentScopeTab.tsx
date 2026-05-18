@@ -64,7 +64,6 @@ import {
   candidateScopedCyberRisks,
   candidateScopedThreats,
   candidateScopedVulnerabilities,
-  effectiveCyberRiskIdSet,
   SCOPE_CATALOG_TOTALS,
 } from "./scopeAssessmentRollup.js";
 import AssessmentScopeEmptyState from "../components/AssessmentScopeEmptyState.js";
@@ -1605,7 +1604,7 @@ function ScopeScopedThreatsGrid({
                 direction="row"
                 alignItems="center"
                 gap={1}
-                aria-label={`${name} cannot be included until at least one linked cyber risk is in scope.`}
+                aria-label={`${name} is not available to include in scope.`}
                 sx={{
                   height: "100%",
                   width: "100%",
@@ -1777,7 +1776,7 @@ function ScopeScopedThreatsGrid({
             slotProps={{
               main: {
                 "aria-label":
-                  "Threats linked to assets in assessment scope. Use the first column to include or exclude each threat when linked cyber risks are in scope.",
+                  "Threats linked to assets in assessment scope. Use the first column to include or exclude each threat.",
               },
               basePagination: { material: { labelRowsPerPage: "Rows" } },
             }}
@@ -2417,18 +2416,13 @@ export default function AssessmentScopeTab({
     }));
   }, [includedAssetIds, excludedScopeCyberRiskIds]);
 
-  const effectiveCrSet = useMemo(
-    () => effectiveCyberRiskIdSet(includedAssetIds, excludedScopeCyberRiskIds),
-    [includedAssetIds, excludedScopeCyberRiskIds],
-  );
-
   const scopeThreatGridRows = useMemo((): ScopeThreatRow[] => {
-    return candidateScopedThreats(includedAssetIds).map((t) => {
-      const hasEffectiveCr = t.cyberRiskIds.some((id) => effectiveCrSet.has(id));
-      const included = hasEffectiveCr && !excludedScopeThreatIds.has(t.id);
-      return { ...t, included, toggleDisabled: !hasEffectiveCr };
-    });
-  }, [includedAssetIds, excludedScopeThreatIds, effectiveCrSet]);
+    return candidateScopedThreats(includedAssetIds).map((t) => ({
+      ...t,
+      included: !excludedScopeThreatIds.has(t.id),
+      toggleDisabled: false,
+    }));
+  }, [includedAssetIds, excludedScopeThreatIds]);
 
   const scopeVulnerabilityGridRows = useMemo((): ScopeVulnerabilityRow[] => {
     return candidateScopedVulnerabilities(includedAssetIds).map((v) => ({
@@ -2452,7 +2446,7 @@ export default function AssessmentScopeTab({
         excludedScopeCyberRiskIds,
         excludedScopeThreatIds,
       ),
-    [includedAssetIds, excludedScopeCyberRiskIds, excludedScopeThreatIds],
+    [includedAssetIds, excludedScopeThreatIds],
   );
   const scopedVulnRows = useMemo(
     () => assessmentScopedVulnerabilities(includedAssetIds, excludedScopeVulnerabilityIds),

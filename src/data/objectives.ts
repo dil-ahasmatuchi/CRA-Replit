@@ -9,10 +9,14 @@ import { cyberRisks } from "./cyberRisks.js";
 import { scenarios } from "./scenarios.js";
 import { riskAssessments } from "./riskAssessments.js";
 import { mitigationPlans } from "./mitigationPlans.js";
+import { users } from "./users.js";
 import { mulberry32 } from "./relationshipHeuristics.js";
 
-const USER_COUNT = 50;
 const PROCESS_CATALOG = 35;
+
+function activeUserCount(): number {
+  return Math.max(1, users.length);
+}
 
 function dedupeIds(ids: string[]): string[] {
   const seen = new Set<string>();
@@ -244,7 +248,7 @@ const OBJECTIVE_SEEDS: readonly { title: string; description: string }[] = [
 function buildObjectives(): MockObjective[] {
   return OBJECTIVE_SEEDS.map((seed, i) => {
     const rng = mulberry32(0x4f424b00 + i * 104729 + 3);
-    const ownerIdx = 1 + Math.floor(rng() * USER_COUNT);
+    const ownerIdx = 1 + Math.floor(rng() * activeUserCount());
     return {
       id: padId("OBJ", i + 1),
       title: seed.title,
@@ -258,6 +262,20 @@ function buildObjectives(): MockObjective[] {
 export const objectives: MockObjective[] = buildObjectives();
 
 const objectiveById = new Map(objectives.map((o) => [o.id, o]));
+
+function rebuildObjectiveIndex(): void {
+  objectiveById.clear();
+  for (const o of objectives) {
+    objectiveById.set(o.id, o);
+  }
+}
+
+/** Re-wire objective relationship ids after catalog replacement (e.g. Pooja migration). */
+export function rebuildObjectivesFromCurrentCatalog(): void {
+  objectives.length = 0;
+  objectives.push(...buildObjectives());
+  rebuildObjectiveIndex();
+}
 
 export function getObjectiveById(id: string): MockObjective | undefined {
   return objectiveById.get(id);

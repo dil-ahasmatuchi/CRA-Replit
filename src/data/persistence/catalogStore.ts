@@ -1,5 +1,9 @@
 import type { CraNewAssessmentPersistedDraft } from "../craAssessmentDraftTypes.js";
-import { CATALOG_STORAGE_KEY, type PersistedCatalogV1 } from "./catalogTypes.js";
+import {
+  CATALOG_STORAGE_KEY,
+  LEGACY_CATALOG_STORAGE_KEY,
+  type PersistedCatalog,
+} from "./catalogTypes.js";
 
 const DEBOUNCE_MS = 350;
 
@@ -98,6 +102,21 @@ async function saveToIndexedDB(key: string, value: string): Promise<void> {
   db.close();
 }
 
+async function deleteIndexedDbKv(key: string): Promise<void> {
+  try {
+    const db = await openIdb();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction("kv", "readwrite");
+      tx.objectStore("kv").delete(key);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+    db.close();
+  } catch {
+    // ignore
+  }
+}
+
 async function loadFromIndexedDB(key: string): Promise<string | null> {
   try {
     const db = await openIdb();
@@ -130,15 +149,25 @@ export async function loadRawCatalogJsonAsync(): Promise<string | null> {
   return loadFromIndexedDB(CATALOG_STORAGE_KEY);
 }
 
-export function parsePersistedCatalog(json: string): PersistedCatalogV1 | null {
+export function parsePersistedCatalog(json: string): PersistedCatalog | null {
   try {
     const o = JSON.parse(json) as unknown;
     if (o == null || typeof o !== "object") return null;
-    const p = o as PersistedCatalogV1;
-    if (p.schemaVersion !== 2) return null;
+    const p = o as PersistedCatalog;
+    if (p.schemaVersion !== 2 && p.schemaVersion !== 3) return null;
+    if (p.schemaVersion === 3 && !Array.isArray((p as { scenarios?: unknown }).scenarios)) return null;
     return p;
   } catch {
     return null;
+  }
+}
+
+function removeCatalogKeysFromLocalStorage(): void {
+  try {
+    localStorage.removeItem(CATALOG_STORAGE_KEY);
+    localStorage.removeItem(LEGACY_CATALOG_STORAGE_KEY);
+  } catch {
+    // ignore
   }
 }
 
@@ -153,25 +182,32 @@ export function resetPrototypeCatalog(): void {
 }
 
 export function resetCatalogStorage(): void {
-  try {
-    localStorage.removeItem(CATALOG_STORAGE_KEY);
-  } catch {
-    // ignore
-  }
+  removeCatalogKeysFromLocalStorage();
   void (async () => {
-    try {
-      const db = await openIdb();
-      await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction("kv", "readwrite");
-        tx.objectStore("kv").delete(CATALOG_STORAGE_KEY);
-        tx.oncomplete = () => resolve();
-        tx.onerror = () => reject(tx.error);
-      });
-      db.close();
-    } catch {
-      // ignore
-    }
+    await deleteIndexedDbKv(CATALOG_STORAGE_KEY);
+    await deleteIndexedDbKv(LEGACY_CATALOG_STORAGE_KEY);
   })();
   craDraftMemory = null;
   notifyCatalogListeners();
+}
+
+/**
+ * Same as {@link resetCatalogStorage} but waits for IndexedDB deletes to finish (avoids reload winning the race).
+ */
+export async function resetCatalogStorageAsync(): Promise<void> {
+  removeCatalogKeysFromLocalStorage();
+  await deleteIndexedDbKv(CATALOG_STORAGE_KEY);
+  await deleteIndexedDbKv(LEGACY_CATALOG_STORAGE_KEY);
+  craDraftMemory = null;
+  notifyCatalogListeners();
+}
+
+/** Like {@link resetPrototypeCatalog} but awaits IndexedDB cleanup — use before `location.reload()`. */
+export async function resetPrototypeCatalogAsync(): Promise<void> {
+  try {
+    sessionStorage.removeItem("cra_new_assessment_draft_v1");
+  } catch {
+    // ignore
+  }
+  await resetCatalogStorageAsync();
 }

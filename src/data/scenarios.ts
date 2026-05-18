@@ -303,6 +303,21 @@ export function setScenarioOverridesFromPersistence(
   scenarioOverrides = next && typeof next === "object" ? { ...next } : {};
 }
 
+/** Full scenario rows for catalog snapshots (schema v3). */
+export function getScenariosForPersistence(): MockScenario[] {
+  return JSON.parse(JSON.stringify(scenarios)) as MockScenario[];
+}
+
+/** Replace library scenarios (e.g. Pooja migration) and re-link cyber risks / threats / vulns / assets. */
+export function replaceScenariosFromPersistence(next: MockScenario[]): void {
+  scenarios.length = 0;
+  scenarios.push(...next);
+  applyScenarioEntityLinks(scenarios);
+  rebuildScenarioIndex();
+  applyScenarioOverridesToRows();
+  markCatalogDirty();
+}
+
 /** Rebuild scenario rows from current cyber risks / threats / assets, then re-apply persisted overrides. */
 export function rebuildScenariosFromGraph(): void {
   const next = buildScenarios();

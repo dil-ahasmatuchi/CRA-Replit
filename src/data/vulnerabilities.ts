@@ -1,5 +1,5 @@
 /**
- * Vulnerability catalog (two Active/Draft rows per asset = 300 total). If you import this module
+ * Vulnerability catalog (two Active/Draft rows per asset). If you import this module
  * without loading `threats.js` first, `threatIds` / `relationships.threatIds` stay empty.
  * Import `../data/threats.js` (side effect) or use the data barrel that pulls in threats.
  */
@@ -374,7 +374,7 @@ const TEMPLATES: Record<AssetType, VulnTemplate[]> = {
   ],
 };
 
-/** Exactly two vulnerability categories per asset → 300 total with 150 assets. */
+/** Exactly two vulnerability categories per asset (count = 2 × assets.length for the default seed). */
 const VULNERABILITIES_PER_ASSET = 2;
 
 function emptyRelationshipPlaceholders(assetId: string, cyberRiskIds: string[]) {

@@ -15,13 +15,10 @@ import { vulnerabilities } from "./vulnerabilities.js";
 import { users } from "./users.js";
 
 /**
- * 60 library threats. Threat↔asset links are generated with **variable** degrees per threat using
+ * Library threats from `LIBRARY_THREATS`. Threat↔asset links are generated with **variable** degrees per threat using
  * keyword similarity (name/type vs threat title/domain) plus noise — no fixed per-asset threat count.
  * `applyCrossEntityLinks` syncs asset ↔ vulnerability ↔ threat. Cyber risk mirrors: `cyberRisks.ts`.
  */
-
-const LIBRARY_THREAT_COUNT = 60;
-const ASSET_NODE_COUNT = 150;
 
 type ThreatSeed = {
   title: string;
@@ -38,7 +35,7 @@ function buildThreatAssetEdges(): Array<[number, number]> {
   const rng = mulberry32(99_001);
   const edges: Array<[number, number]> = [];
 
-  for (let ti = 0; ti < LIBRARY_THREAT_COUNT; ti++) {
+  for (let ti = 0; ti < LIBRARY_THREATS.length; ti++) {
     const seed = LIBRARY_THREATS[ti]!;
     const threatText = `${seed.title} ${seed.domain}`;
     const breadth = 2 + Math.floor(rng() * 29);
@@ -245,14 +242,12 @@ function vulnIdsForAssets(assetIds: string[]): string[] {
 }
 
 function buildThreats(): MockThreat[] {
-  if (LIBRARY_THREATS.length !== LIBRARY_THREAT_COUNT) {
-    throw new Error(`LIBRARY_THREATS length ${LIBRARY_THREATS.length} !== ${LIBRARY_THREAT_COUNT}`);
-  }
-  if (assets.length !== ASSET_NODE_COUNT) {
-    throw new Error(`assets.length ${assets.length} !== ASSET_NODE_COUNT ${ASSET_NODE_COUNT}`);
+  const nThreats = LIBRARY_THREATS.length;
+  if (assets.length === 0) {
+    throw new Error("assets catalog is empty; cannot build default threats.");
   }
   const edges = buildThreatAssetEdges();
-  const assetIdxByThreat: string[][] = Array.from({ length: LIBRARY_THREAT_COUNT }, () => []);
+  const assetIdxByThreat: string[][] = Array.from({ length: nThreats }, () => []);
 
   for (const [ti, ai] of edges) {
     assetIdxByThreat[ti]!.push(assets[ai]!.id);
@@ -261,7 +256,7 @@ function buildThreats(): MockThreat[] {
   const defaultOwnerId = users[0]?.id ?? "USR-001";
   const out: MockThreat[] = [];
 
-  for (let i = 0; i < LIBRARY_THREAT_COUNT; i++) {
+  for (let i = 0; i < nThreats; i++) {
     const seed = LIBRARY_THREATS[i]!;
     const assetIds = [...assetIdxByThreat[i]!].sort();
     const vulnerabilityIds = vulnIdsForAssets(assetIds);

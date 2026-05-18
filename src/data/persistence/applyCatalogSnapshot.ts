@@ -14,6 +14,7 @@ import { replaceRiskAssessmentsFromPersistence } from "../riskAssessments.js";
 import {
   rebuildScenariosFromGraph,
   refreshScenarioScaleLabelsFromConfig,
+  replaceScenariosFromPersistence,
   setScenarioOverridesFromPersistence,
 } from "../scenarios.js";
 import { replaceThreatsFromPersistence } from "../threats.js";
@@ -26,10 +27,12 @@ import {
 import { refreshAllCyberRiskScaleLabelsFromConfig } from "../cyberRisks.js";
 import { replaceUsersFromPersistence } from "../users.js";
 import { replaceVulnerabilitiesFromPersistence } from "../vulnerabilities.js";
+import { rebuildObjectivesFromCurrentCatalog } from "../objectives.js";
+import { rebuildProcessesFromCurrentCatalog } from "../processes.js";
 
-import type { PersistedCatalogV1 } from "./catalogTypes.js";
+import type { PersistedCatalog, PersistedCatalogV3 } from "./catalogTypes.js";
 
-function applyPersistedScoringBands(catalog: PersistedCatalogV1): void {
+function applyPersistedScoringBands(catalog: PersistedCatalog): void {
   const { cyberScoreBands, likelihoodBands } = catalog;
   if (
     Array.isArray(cyberScoreBands) &&
@@ -47,8 +50,9 @@ function applyPersistedScoringBands(catalog: PersistedCatalogV1): void {
   }
 }
 
-export function applyPersistedCatalog(catalog: PersistedCatalogV1): void {
-  if (!catalog || catalog.schemaVersion !== 2) return;
+export function applyPersistedCatalog(catalog: PersistedCatalog): void {
+  if (!catalog) return;
+  if (catalog.schemaVersion !== 2 && catalog.schemaVersion !== 3) return;
   if (!Array.isArray(catalog.users) || !Array.isArray(catalog.threats)) return;
 
   applyPersistedScoringBands(catalog);
@@ -62,7 +66,15 @@ export function applyPersistedCatalog(catalog: PersistedCatalogV1): void {
   replaceMitigationPlansFromPersistence(catalog.mitigationPlans);
   replaceCyberRisksFromPersistence(catalog.cyberRisks);
   setScenarioOverridesFromPersistence(catalog.scenarioOverrides);
-  rebuildScenariosFromGraph();
+  if (
+    catalog.schemaVersion === 3 &&
+    Array.isArray((catalog as PersistedCatalogV3).scenarios) &&
+    (catalog as PersistedCatalogV3).scenarios.length > 0
+  ) {
+    replaceScenariosFromPersistence((catalog as PersistedCatalogV3).scenarios);
+  } else {
+    rebuildScenariosFromGraph();
+  }
   replaceRiskAssessmentsFromPersistence(catalog.riskAssessments);
   hydratePersistedCraDraft(
     catalog.craDraft != null ? sanitizeCraNewAssessmentDraft(catalog.craDraft) : null,
@@ -70,6 +82,20 @@ export function applyPersistedCatalog(catalog: PersistedCatalogV1): void {
 
   refreshAllCyberRiskScaleLabelsFromConfig();
   refreshScenarioScaleLabelsFromConfig();
+  rebuildObjectivesFromCurrentCatalog();
+  rebuildProcessesFromCurrentCatalog();
+}
+
+
+/** Like {@link applyCatalogFromStorage} but applies `fallback` when no valid persisted blob exists. */
+export async function applyCatalogFromStorageWithFallback(fallback: PersistedCatalog): Promise<void> {
+  let json = loadRawCatalogJson();
+  if (!json) {
+    json = await loadRawCatalogJsonAsync();
+  }
+  const catalog = json ? parsePersistedCatalog(json) : null;
+  if (catalog) applyPersistedCatalog(catalog);
+  else applyPersistedCatalog(fallback);
 }
 
 

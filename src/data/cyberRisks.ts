@@ -18,7 +18,7 @@ const OWNER_ROTATION = [7, 9, 14, 15, 20, 33, 39, 49, 1, 5] as const;
 const RESIDUAL_LIKELIHOOD_ALPHA = 0.35;
 
 /**
- * Exactly 20 library cyber risks. Threat links use keyword overlap (risk name vs threat title/domain) plus
+ * Library cyber risks from `RISK_SEEDS`. Threat links use keyword overlap (risk name vs threat title/domain) plus
  * seeded jitter for variable breadth; any threat not picked in the first pass is attached once to its
  * best-matching risk so the library stays fully covered.
  */
@@ -120,6 +120,21 @@ function refreshCyberRiskDerivedFields(risk: MockCyberRisk): void {
   risk.relationships.vulnerabilityIds = [...risk.vulnerabilityIds];
 }
 
+/** Clears cyber-risk back-references so a new graph can be replayed (seed + persisted catalogs). */
+function clearCyberRiskBackReferencesFromCatalog(): void {
+  for (const v of vulnerabilities) {
+    v.cyberRiskIds.length = 0;
+    v.relationships.cyberRiskIds.length = 0;
+  }
+  for (const t of threats) {
+    t.cyberRiskIds.length = 0;
+    t.relationships.cyberRiskIds.length = 0;
+  }
+  for (const a of assets) {
+    a.relationships.cyberRiskIds.length = 0;
+  }
+}
+
 function linkCyberRiskToEntities(risk: MockCyberRisk): void {
   const vulnById = new Map(vulnerabilities.map((v) => [v.id, v]));
   const tById = new Map(threats.map((t) => [t.id, t]));
@@ -147,6 +162,14 @@ function linkCyberRiskToEntities(risk: MockCyberRisk): void {
   }
 }
 
+/** Replays `linkCyberRiskToEntities` for each loaded risk (mirrors seed `buildCyberRisks` wiring). */
+function relinkCyberRisksToThreatsVulnsAssets(): void {
+  clearCyberRiskBackReferencesFromCatalog();
+  for (const r of cyberRisks) {
+    linkCyberRiskToEntities(r);
+  }
+}
+
 function unionAssetIdsForThreats(threatIds: string[]): string[] {
   const s = new Set<string>();
   for (const tid of threatIds) {
@@ -171,17 +194,7 @@ function mitigationPlanIdsForRiskIndex(i: number): string[] {
 }
 
 function buildCyberRisks(): MockCyberRisk[] {
-  for (const v of vulnerabilities) {
-    v.cyberRiskIds.length = 0;
-    v.relationships.cyberRiskIds.length = 0;
-  }
-  for (const t of threats) {
-    t.cyberRiskIds.length = 0;
-    t.relationships.cyberRiskIds.length = 0;
-  }
-  for (const a of assets) {
-    a.relationships.cyberRiskIds.length = 0;
-  }
+  clearCyberRiskBackReferencesFromCatalog();
 
   const out: MockCyberRisk[] = [];
 
@@ -283,6 +296,7 @@ export function replaceCyberRisksFromPersistence(next: MockCyberRisk[]): void {
   cyberRisks.length = 0;
   cyberRisks.push(...next);
   rebuildCyberRiskIndex();
+  relinkCyberRisksToThreatsVulnsAssets();
   for (const r of cyberRisks) {
     applyResidualCyberRiskScores(r);
   }

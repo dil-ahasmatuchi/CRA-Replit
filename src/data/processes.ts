@@ -10,9 +10,12 @@ import { scenarios } from "./scenarios.js";
 import { riskAssessments } from "./riskAssessments.js";
 import { mitigationPlans } from "./mitigationPlans.js";
 import { objectives } from "./objectives.js";
+import { users } from "./users.js";
 import { mulberry32 } from "./relationshipHeuristics.js";
 
-const USER_COUNT = 50;
+function activeUserCount(): number {
+  return Math.max(1, users.length);
+}
 
 function dedupeIds(ids: string[]): string[] {
   const seen = new Set<string>();
@@ -209,7 +212,7 @@ const PROCESS_SEEDS: readonly ProcessSeed[] = [
 function buildProcesses(): MockProcess[] {
   return PROCESS_SEEDS.map((seed, i) => {
     const rng = mulberry32(0x50726400 + i * 100379 + 11);
-    const ownerIdx = 1 + Math.floor(rng() * USER_COUNT);
+    const ownerIdx = 1 + Math.floor(rng() * activeUserCount());
     return {
       id: padId("PRC", i + 1),
       title: seed.title,
@@ -223,6 +226,20 @@ function buildProcesses(): MockProcess[] {
 export const processes: MockProcess[] = buildProcesses();
 
 const processById = new Map(processes.map((p) => [p.id, p]));
+
+function rebuildProcessIndex(): void {
+  processById.clear();
+  for (const p of processes) {
+    processById.set(p.id, p);
+  }
+}
+
+/** Re-wire process relationship ids after catalog replacement (e.g. Pooja migration). */
+export function rebuildProcessesFromCurrentCatalog(): void {
+  processes.length = 0;
+  processes.push(...buildProcesses());
+  rebuildProcessIndex();
+}
 
 export function getProcessById(id: string): MockProcess | undefined {
   return processById.get(id);

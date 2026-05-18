@@ -36,29 +36,23 @@ export function effectiveCyberRiskIdSet(
   return new Set(assessmentScopedCyberRisks(assetIds, excludedCyberRiskIds).map((r) => r.id));
 }
 
-/** Threats linked to included assets and at least one candidate (asset-scoped) cyber risk. */
+/** Threats linked to any included asset (asset ids only; cyber-risk exclusions do not remove threats here). */
 export function candidateScopedThreats(assetIds: Set<string>): MockThreat[] {
   if (assetIds.size === 0) return [];
-  const candidateCrIds = new Set(candidateScopedCyberRisks(assetIds).map((cr) => cr.id));
-  if (candidateCrIds.size === 0) return [];
-  return threats.filter(
-    (t) =>
-      t.assetIds.some((aid) => assetIds.has(aid)) &&
-      t.cyberRiskIds.some((id) => candidateCrIds.has(id)),
-  );
+  return threats.filter((t) => t.assetIds.some((aid) => assetIds.has(aid)));
 }
 
+/**
+ * Threats linked to included assets, minus explicit threat exclusions.
+ * `excludedCyberRiskIds` is ignored for threat membership (still used for cyber risks and scenarios elsewhere).
+ */
 export function assessmentScopedThreats(
   assetIds: Set<string>,
-  excludedCyberRiskIds: Set<string>,
+  _excludedCyberRiskIds: Set<string>,
   excludedThreatIds: Set<string> = new Set(),
 ): MockThreat[] {
-  const effectiveIds = effectiveCyberRiskIdSet(assetIds, excludedCyberRiskIds);
-  if (assetIds.size === 0 || effectiveIds.size === 0) return [];
-  return candidateScopedThreats(assetIds).filter(
-    (t) =>
-      t.cyberRiskIds.some((id) => effectiveIds.has(id)) && !excludedThreatIds.has(t.id),
-  );
+  if (assetIds.size === 0) return [];
+  return candidateScopedThreats(assetIds).filter((t) => !excludedThreatIds.has(t.id));
 }
 
 /** Vulnerabilities on included assets (active for assessment), before user exclusions. */

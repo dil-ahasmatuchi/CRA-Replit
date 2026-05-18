@@ -1,11 +1,14 @@
+import { useState } from "react";
 import { PageHeader, OverflowBreadcrumbs } from "@diligentcorp/atlas-react-bundle";
 import { Button, Stack, Typography } from "@mui/material";
 import { NavLink } from "react-router";
 
 import PageLayout from "../components/PageLayout.js";
-import { resetPrototypeCatalog } from "../data/persistence/catalogStore.js";
+import { resetPrototypeCatalogAsync } from "../data/persistence/catalogStore.js";
 
 export default function SettingsPage() {
+  const [resetting, setResetting] = useState(false);
+
   return (
     <PageLayout>
       <PageHeader
@@ -31,18 +34,23 @@ export default function SettingsPage() {
       <Stack sx={{ mt: 3, maxWidth: 560 }} gap={2}>
         <Typography variant="subtitle1">Prototype data</Typography>
         <Typography variant="body1" sx={{ color: "text.secondary" }}>
-          Clear locally persisted catalog (threats, assessments, CRA draft, scenario edits) and reload the app
-          with seed data from the codebase.
+          Clear locally persisted catalog (threats, assessments, CRA draft, scenario edits), including IndexedDB
+          if the catalog was stored there. After reload, the bundled prototype catalog loads again.
         </Typography>
         <Button
           type="button"
           variant="outlined"
-          onClick={() => {
-            resetPrototypeCatalog();
-            globalThis.location.reload();
+          disabled={resetting}
+          onClick={async () => {
+            setResetting(true);
+            try {
+              await resetPrototypeCatalogAsync();
+            } finally {
+              globalThis.location.reload();
+            }
           }}
         >
-          Reset prototype data
+          {resetting ? "Resetting…" : "Reset prototype data"}
         </Button>
       </Stack>
     </PageLayout>

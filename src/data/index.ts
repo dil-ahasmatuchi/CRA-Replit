@@ -114,6 +114,7 @@ export {
   subscribeCatalog,
   getCatalogSnapshotVersion,
   resetPrototypeCatalog,
+  resetPrototypeCatalogAsync,
 } from "./persistence/catalogStore.js";
-export { applyPersistedCatalog, applyCatalogFromStorage } from "./persistence/applyCatalogSnapshot.js";
+export { applyPersistedCatalog, applyCatalogFromStorage, applyCatalogFromStorageWithFallback } from "./persistence/applyCatalogSnapshot.js";
 export { buildPersistedCatalogSnapshot } from "./persistence/catalogSnapshotBuilder.js";
