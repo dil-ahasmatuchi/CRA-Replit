@@ -4,7 +4,8 @@ import {
   getLikelihoodLabel,
   getCyberRiskScoreLabel,
 } from "./types.js";
-import type { MockScenario, FivePointScaleValue, FivePointScaleLabel } from "./types.js";
+import type { MockScenario, FivePointScaleValue } from "./types.js";
+import { buildScoringRationale, buildVulnsByAssetIdMap, formatThreatPhrase } from "./buildScoringRationale.js";
 import { cyberRisks } from "./cyberRisks.js";
 import { assets } from "./assets.js";
 import { markCatalogDirty } from "./persistence/catalogStore.js";
@@ -16,34 +17,6 @@ import { vulnerabilities as allVulnerabilities } from "./vulnerabilities.js";
  * Name: "{threat} on {asset}"; vulnerabilityIds = that threat’s vulns on the asset.
  */
 
-function buildVulnsByAssetId(): Map<string, typeof allVulnerabilities> {
-  const vulnsByAssetId = new Map<string, typeof allVulnerabilities>();
-  for (const v of allVulnerabilities) {
-    for (const aid of v.assetIds) {
-      const list = vulnsByAssetId.get(aid);
-      if (list) list.push(v);
-      else vulnsByAssetId.set(aid, [v]);
-    }
-  }
-  return vulnsByAssetId;
-}
-
-const IMPACT_CONSEQUENCE: Record<FivePointScaleLabel, string> = {
-  "Very high": "severe and far-reaching",
-  High: "significant",
-  Medium: "moderate but notable",
-  Low: "limited",
-  "Very low": "minimal",
-};
-
-function formatThreatPhrase(names: string[]): string {
-  const n = names.filter(Boolean);
-  if (n.length === 0) return "";
-  if (n.length === 1) return n[0]!;
-  if (n.length === 2) return `${n[0]!} and ${n[1]!}`;
-  return `${n.slice(0, -1).join(", ")}, and ${n[n.length - 1]!}`;
-}
-
 function buildScenarioName(
   cyberRiskName: string,
   threatPhrase: string,
@@ -51,70 +24,6 @@ function buildScenarioName(
 ): string {
   if (threatPhrase) return `${threatPhrase} on ${assetName}`;
   return `${cyberRiskName} on ${assetName}`;
-}
-
-function buildScoringRationale(
-  cyberRiskName: string,
-  scenarioThreatPhrase: string,
-  assetName: string,
-  assetType: string,
-  impactLabel: FivePointScaleLabel,
-  threatSevLabel: FivePointScaleLabel,
-  vulnSevLabel: FivePointScaleLabel,
-  likelihoodLabel: FivePointScaleLabel,
-  cyberRiskScoreLabel: FivePointScaleLabel,
-  scenarioThreatIds: string[],
-  scenarioVulnIds: string[],
-  assetId: string,
-  maps: {
-    threatById: Map<string, (typeof allThreats)[number]>;
-    vulnById: Map<string, (typeof allVulnerabilities)[number]>;
-    vulnsByAssetId: Map<string, typeof allVulnerabilities>;
-  },
-): string {
-  const threatNamesList = scenarioThreatIds
-    .map((id) => maps.threatById.get(id)?.name)
-    .filter(Boolean) as string[];
-
-  const vulnDetails = scenarioVulnIds
-    .map((id) => maps.vulnById.get(id))
-    .filter((v): v is NonNullable<typeof v> => v != null);
-
-  const vulnNamesSentence = vulnDetails.map((v) => v.name).join("; ") || "N/A";
-
-  const assetVulns = maps.vulnsByAssetId.get(assetId) ?? [];
-  const vulnBullets = assetVulns
-    .map(
-      (v) =>
-        `• ${v.name} (${v.domain}, ${v.primaryCIAImpact.length ? v.primaryCIAImpact.join(" · ") : "—"})`,
-    )
-    .join("\n");
-
-  const threatFocus =
-    scenarioThreatPhrase ||
-    (threatNamesList.length ? formatThreatPhrase(threatNamesList) : "the modeled threat");
-
-  const sections: string[] = [
-    `Cyber risk (library) — ${cyberRiskName}: This scenario sits under the ${cyberRiskName} cyber risk in the library. Here we assess ${threatFocus} against ${assetName} (${assetType.toLowerCase()}).`,
-
-    `Threat level (${threatSevLabel}): The threat severity is ${threatSevLabel.toLowerCase()} for this scenario’s threat vector${threatNamesList.length ? ` (${formatThreatPhrase(threatNamesList)})` : ""}.`,
-
-    `Vulnerability level (${vulnSevLabel}): The vulnerability severity is ${vulnSevLabel.toLowerCase()}. All vulnerabilities scoped to this scenario were evaluated together; the rating reflects their combined exposure. Contributing items: ${vulnNamesSentence}.`,
-
-    `Impact (${impactLabel}): ${assetName} is ${impactLabel.toLowerCase()}-criticality. Compromise or disruption would have ${IMPACT_CONSEQUENCE[impactLabel]} consequences for the organization.`,
-
-    `Likelihood (${likelihoodLabel}): ${threatSevLabel} threat severity together with ${vulnSevLabel} vulnerability severity yields ${likelihoodLabel.toLowerCase()} likelihood of this scenario materializing.`,
-
-    `Cyber risk score (${cyberRiskScoreLabel}): Given ${impactLabel.toLowerCase()} impact and ${likelihoodLabel.toLowerCase()} likelihood, the scenario cyber risk score is ${cyberRiskScoreLabel.toLowerCase()}.`,
-  ];
-
-  if (assetVulns.length > 0) {
-    sections.push(
-      `Other vulnerabilities recorded on ${assetName} (context):\n${vulnBullets}`,
-    );
-  }
-
-  return sections.join("\n\n");
 }
 
 function scenarioSeverityValues(seq: number): {
@@ -130,7 +39,7 @@ function buildScenarios(): MockScenario[] {
   const threatById = new Map(allThreats.map((t) => [t.id, t]));
   const vulnById = new Map(allVulnerabilities.map((v) => [v.id, v]));
   const assetById = new Map(assets.map((a) => [a.id, a]));
-  const vulnsByAssetId = buildVulnsByAssetId();
+  const vulnsByAssetId = buildVulnsByAssetIdMap(allVulnerabilities);
   const maps = { threatById, vulnById, vulnsByAssetId };
 
   const list: MockScenario[] = [];

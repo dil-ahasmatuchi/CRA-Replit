@@ -1,6 +1,6 @@
 /**
  * One-time: Resources/Pooja_SCHEMA_OBJECTS.json → src/data/generated/pooja-migrated-catalog.v3.json
- * Run: node scripts/migrate-pooja-schema-json-to-catalog.mjs
+ * Run: npm run migrate:pooja
  *
  * Assessment display IDs ASM-* are normalized to CRA-* (same numeric suffix).
  * Threat display T-* maps to meta id THR-* (same numeric suffix, 3-digit THR pad).
@@ -9,6 +9,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import type { FivePointScaleLabel } from "../src/data/types.js";
+import { buildScoringRationale, buildVulnsByAssetIdMap, formatThreatPhrase } from "../src/data/buildScoringRationale.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
@@ -543,6 +545,11 @@ function main() {
     });
   }
 
+  const cyberRiskById = new Map(cyberRisks.map((r) => [r.id, r.name.trim()]));
+  const threatByIdRationale = new Map(threats.map((t) => [t.id, { name: t.name }]));
+  const vulnByIdRationale = new Map(vulnerabilities.map((v) => [v.id, v]));
+  const vulnsByAssetId = buildVulnsByAssetIdMap(vulnerabilities);
+
   const scenarios = scenarioRows.map((row) => {
     const id = row["Display ID"].trim();
     const name = row.Name.trim();
@@ -562,6 +569,25 @@ function main() {
     const likelihood = Math.min(25, Math.max(1, threatSeverity * vulnerabilitySeverity));
     const cyberRiskScore = Math.min(125, Math.max(1, impact * likelihood));
     const ctlIds = parseIdList(row.Controls).filter((x) => x.startsWith("CTL-"));
+    const scenarioThreatIds = thrId ? [thrId] : [];
+    const scenarioVulnIds = vulnId ? [vulnId] : [];
+    const threatNamesForTitle = scenarioThreatIds
+      .map((tid) => threatByIdRationale.get(tid)?.name)
+      .filter(Boolean) as string[];
+    const scenarioThreatPhrase = formatThreatPhrase(threatNamesForTitle);
+    const cyberRiskName = (crCell && cyberRiskById.get(crCell)) || crCell || "Cyber risk";
+    const assetName = asset?.name ?? assetId;
+    const assetType = asset?.assetType ?? "Asset";
+    const impactLabel = fiveLabel(impact) as FivePointScaleLabel;
+    const threatSeverityLabel = fiveLabel(threatSeverity) as FivePointScaleLabel;
+    const vulnerabilitySeverityLabel = fiveLabel(vulnerabilitySeverity) as FivePointScaleLabel;
+    const likelihoodLabelValue = likelihoodLabel(likelihood) as FivePointScaleLabel;
+    const cyberRiskScoreLabelValue = cyberScoreLabel(cyberRiskScore) as FivePointScaleLabel;
+    const mapsRationale = {
+      threatById: threatByIdRationale,
+      vulnById: vulnByIdRationale,
+      vulnsByAssetId,
+    };
     return {
       id,
       name,
@@ -570,18 +596,32 @@ function main() {
       assetId,
       assessmentId,
       impact,
-      impactLabel: fiveLabel(impact),
+      impactLabel,
       threatSeverity,
-      threatSeverityLabel: fiveLabel(threatSeverity),
+      threatSeverityLabel,
       vulnerabilitySeverity,
-      vulnerabilitySeverityLabel: fiveLabel(vulnerabilitySeverity),
+      vulnerabilitySeverityLabel,
       likelihood,
-      likelihoodLabel: likelihoodLabel(likelihood),
+      likelihoodLabel: likelihoodLabelValue,
       cyberRiskScore,
-      cyberRiskScoreLabel: cyberScoreLabel(cyberRiskScore),
-      threatIds: thrId ? [thrId] : [],
-      vulnerabilityIds: vulnId ? [vulnId] : [],
-      scoringRationale: `Migrated from Pooja WAL (one-time).\n\n${name}`,
+      cyberRiskScoreLabel: cyberRiskScoreLabelValue,
+      threatIds: scenarioThreatIds,
+      vulnerabilityIds: scenarioVulnIds,
+      scoringRationale: buildScoringRationale(
+        cyberRiskName,
+        scenarioThreatPhrase,
+        assetName,
+        assetType,
+        impactLabel,
+        threatSeverityLabel,
+        vulnerabilitySeverityLabel,
+        likelihoodLabelValue,
+        cyberRiskScoreLabelValue,
+        scenarioThreatIds,
+        scenarioVulnIds,
+        assetId,
+        mapsRationale,
+      ),
       relationships: {
         cyberRiskId: crCell,
         assetId,
