@@ -88,12 +88,18 @@ export {
   patchScenario,
   rebuildScenariosFromGraph,
   getScenarioOverridesForPersistence,
+  buildScenarioFromGraph,
+  stableSeveritySeqFromTuple,
+  applyScenariosGraphRelinks,
+  deleteScenarioOverridesForIds,
 } from "./scenarios.js";
+export { syncAssessmentOwnedScenarios } from "./assessmentScenarioSync.js";
 export {
   riskAssessments,
   getRiskAssessmentById,
   getRiskAssessmentsForThreatId,
   addRiskAssessment,
+  allocateNextCraId,
   updateRiskAssessment,
   computeAssessmentRollupForAssetIds,
   replaceRiskAssessmentsFromPersistence,

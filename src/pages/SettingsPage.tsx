@@ -35,7 +35,8 @@ export default function SettingsPage() {
         <Typography variant="subtitle1">Prototype data</Typography>
         <Typography variant="body1" sx={{ color: "text.secondary" }}>
           Clear locally persisted catalog (threats, assessments, CRA draft, scenario edits), including IndexedDB
-          if the catalog was stored there. After reload, the bundled prototype catalog loads again.
+          if the catalog was stored there. After reload, the bundled prototype catalog loads again. In dev you
+          can also open <code>/?resetCatalog=1</code> once instead of using this button.
         </Typography>
         <Button
           type="button"

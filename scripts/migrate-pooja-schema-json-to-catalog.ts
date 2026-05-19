@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { FivePointScaleLabel } from "../src/data/types.js";
+import { applyCyberRiskThreatInference } from "../src/data/cyberRiskThreatInference.js";
 import { buildScoringRationale, buildVulnsByAssetIdMap, formatThreatPhrase } from "../src/data/buildScoringRationale.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -487,6 +488,10 @@ function main() {
       },
     };
   });
+
+  for (const r of cyberRisks) {
+    applyCyberRiskThreatInference(r, threats);
+  }
 
   const craIds = [];
   const riskAssessments = assessmentRows.map((row, i) => {

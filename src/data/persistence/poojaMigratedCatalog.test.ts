@@ -11,6 +11,23 @@ describe("pooja migrated catalog bundle", () => {
     expect(parsed!.schemaVersion).toBe(3);
   });
 
+  it("every cyber risk has threatIds that intersect its assetIds", () => {
+    const c = bundledCatalog as PersistedCatalogV3;
+    const threatById = new Map(c.threats.map((t) => [t.id, t]));
+    const riskAssets = (ids: readonly string[]) => new Set(ids);
+
+    for (const cr of c.cyberRisks) {
+      expect(cr.threatIds.length, `${cr.id} threatIds`).toBeGreaterThan(0);
+      const assets = riskAssets(cr.assetIds);
+      for (const tid of cr.threatIds) {
+        const t = threatById.get(tid);
+        expect(t, `${cr.id} → ${tid}`).toBeDefined();
+        const intersects = t!.assetIds.some((aid) => assets.has(aid));
+        expect(intersects, `${cr.id} threat ${tid} must share an asset`).toBe(true);
+      }
+    }
+  });
+
   it("has referential integrity for core links", () => {
     const c = bundledCatalog as PersistedCatalogV3;
     expect(c.users.length).toBeGreaterThan(0);

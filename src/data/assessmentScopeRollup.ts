@@ -8,6 +8,19 @@ import {
 } from "./vulnerabilities.js";
 import type { MockControl, MockCyberRisk, MockScenario, MockThreat, MockVulnerability } from "./types.js";
 
+/**
+ * Deterministic scenario id for an assessment-owned row (does not overlap seed `SC-###` ids).
+ * Tuple key: (craId, cyberRiskId, assetId, threatId).
+ */
+export function buildAssessmentOwnedScenarioId(
+  craId: string,
+  cyberRiskId: string,
+  assetId: string,
+  threatId: string,
+): string {
+  return `SCA-${craId}-${cyberRiskId}-${assetId}-${threatId}`;
+}
+
 export function includedAssetIdSet(rows: { included: boolean; assetId: string }[]): Set<string> {
   const s = new Set<string>();
   for (const r of rows) {
@@ -95,12 +108,26 @@ export function assessmentScopedScenarios(
   if (assetIds.size === 0) return [];
   const riskIds = effectiveCyberRiskIdSet(assetIds, excludedCyberRiskIds);
   const cra = craAssessmentId?.trim();
+  const ownedTupleKeys =
+    cra != null && cra !== ""
+      ? new Set(
+          scenarios
+            .filter((x) => x.assessmentId === cra)
+            .map((x) => `${x.cyberRiskId}|${x.assetId}|${x.threatIds[0] ?? ""}`),
+        )
+      : null;
   return scenarios.filter((s) => {
     if (!assetIds.has(s.assetId) || !riskIds.has(s.cyberRiskId) || excludedScenarioIds.has(s.id)) {
       return false;
     }
     if (cra && s.assessmentId != null && s.assessmentId !== cra) {
       return false;
+    }
+    if (cra && ownedTupleKeys != null && ownedTupleKeys.size > 0) {
+      const tupleKey = `${s.cyberRiskId}|${s.assetId}|${s.threatIds[0] ?? ""}`;
+      if (s.assessmentId == null && ownedTupleKeys.has(tupleKey)) {
+        return false;
+      }
     }
     return true;
   });

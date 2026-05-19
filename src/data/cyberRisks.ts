@@ -5,6 +5,7 @@ import {
   getCyberRiskScoreLabel,
 } from "./types.js";
 import type { MockCyberRisk, CyberRiskStatus, FivePointScaleValue } from "./types.js";
+import { applyCyberRiskThreatInference } from "./cyberRiskThreatInference.js";
 import { keywordSimilarity, mulberry32 } from "./relationshipHeuristics.js";
 import { threats } from "./threats.js";
 import { vulnerabilities } from "./vulnerabilities.js";
@@ -301,6 +302,9 @@ export function replaceCyberRisksFromPersistence(next: MockCyberRisk[]): void {
   cyberRisks.length = 0;
   cyberRisks.push(...next);
   rebuildCyberRiskIndex();
+  for (const r of cyberRisks) {
+    applyCyberRiskThreatInference(r, threats);
+  }
   relinkCyberRisksToThreatsVulnsAssets();
   for (const r of cyberRisks) {
     applyResidualCyberRiskScores(r);

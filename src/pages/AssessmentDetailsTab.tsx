@@ -42,11 +42,13 @@ import {
   candidateScopedVulnerabilities,
 } from "../data/assessmentScopeRollup.js";
 import {
+  allocateNextCraId,
   computeAssessmentRollupForAssetIds,
   getRiskAssessmentById,
   removeRiskAssessmentById,
   updateRiskAssessment,
 } from "../data/riskAssessments.js";
+import { syncAssessmentOwnedScenarios } from "../data/assessmentScenarioSync.js";
 import AssessmentDetailHeader from "../components/AssessmentDetailHeader.js";
 import {
   useSavedChangesToast,
@@ -358,6 +360,91 @@ export default function AssessmentDetailsTab() {
     }
     return new Set<string>();
   });
+
+  const autoAllocatedCraRef = useRef(false);
+
+  const assessmentScenarioScopeSignature = useMemo(
+    () =>
+      [
+        [...includedScopeAssetIds].sort().join("\0"),
+        [...excludedScopeCyberRiskIds].sort().join("\0"),
+        [...excludedScopeScenarioIds].sort().join("\0"),
+      ].join("|"),
+    [includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds],
+  );
+
+  /** `/new` draft: allocate next CRA id once scope has assets so owned scenarios can be tagged. */
+  useEffect(() => {
+    if (!isNewCraDraftFlow) return;
+    if (routeAssessmentId != null && routeAssessmentId !== "") return;
+    if (/^CRA-\d+$/.test(assessmentId.trim())) return;
+    if (includedScopeAssetIds.size === 0) return;
+    if (assessmentPhase === "assessmentApproved") return;
+    if (autoAllocatedCraRef.current) return;
+    autoAllocatedCraRef.current = true;
+    setAssessmentId(allocateNextCraId());
+  }, [
+    isNewCraDraftFlow,
+    routeAssessmentId,
+    assessmentId,
+    assessmentPhase,
+    includedScopeAssetIds.size,
+  ]);
+
+  /** Keep assessment-owned catalog scenarios aligned with scope (add/update/remove; persists via catalog snapshot). */
+  useEffect(() => {
+    if (assessmentPhase === "assessmentApproved") return;
+    if (includedScopeAssetIds.size === 0) return;
+    const craKey =
+      routeAssessmentId != null && routeAssessmentId !== ""
+        ? routeAssessmentId.trim()
+        : /^CRA-\d+$/.test(assessmentId.trim())
+          ? assessmentId.trim()
+          : "";
+    if (!craKey) return;
+
+    const result = syncAssessmentOwnedScenarios({
+      craId: craKey,
+      includedAssetIds: includedScopeAssetIds,
+      excludedScopeCyberRiskIds,
+      excludedScopeScenarioIds,
+    });
+
+    if (result.removedIds.length > 0) {
+      const purge = new Set(result.removedIds);
+      setExcludedScopeScenarioIds((prev) => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const id of purge) {
+          if (next.delete(id)) changed = true;
+        }
+        return changed ? next : prev;
+      });
+      setScenarioNotApplicableIds((prev) => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const id of purge) {
+          if (next.delete(id)) changed = true;
+        }
+        return changed ? next : prev;
+      });
+      setScenarioManuallyRevealedScoreIds((prev) => {
+        let changed = false;
+        const next = new Set(prev);
+        for (const id of purge) {
+          if (next.delete(id)) changed = true;
+        }
+        return changed ? next : prev;
+      });
+    }
+  }, [
+    assessmentPhase,
+    routeAssessmentId,
+    assessmentId,
+    assessmentScenarioScopeSignature,
+    excludedScopeCyberRiskIds,
+    excludedScopeScenarioIds,
+  ]);
 
   const aiScoringTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   /** Detects newly included scope assets (vs initial snapshot) to move workflow back to Scoping. */

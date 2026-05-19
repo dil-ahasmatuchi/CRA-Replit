@@ -35,13 +35,125 @@ function scenarioSeverityValues(seq: number): {
   return { threatSeverity, vulnerabilitySeverity };
 }
 
-function buildScenarios(): MockScenario[] {
+/** Stable positive integer for severity formulas so assessment-owned rows stay consistent across rescopes. */
+export function stableSeveritySeqFromTuple(
+  cyberRiskId: string,
+  assetId: string,
+  threatId: string,
+): number {
+  const s = `${cyberRiskId}|${assetId}|${threatId}`;
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  const n = Math.abs(h);
+  return n === 0 ? 1 : n;
+}
+
+export type BuildScenarioFromGraphArgs = {
+  id: string;
+  cyberRiskId: string;
+  assetId: string;
+  threatId: string;
+  /**
+   * Drives `scenarioSeverityValues` (same as legacy global `seq` in seed `buildScenarios`).
+   * Omit to use {@link stableSeveritySeqFromTuple} from the tuple.
+   */
+  severitySeq?: number;
+  assessmentId?: string;
+};
+
+/**
+ * Builds one scenario row from current cyber risk / threat / asset / vulnerability graph data.
+ * Returns null if the tuple does not resolve (missing entities or asset not on risk).
+ */
+export function buildScenarioFromGraph(args: BuildScenarioFromGraphArgs): MockScenario | null {
+  const { id, cyberRiskId, assetId, threatId, assessmentId } = args;
+  const risk = cyberRisks.find((r) => r.id === cyberRiskId);
   const threatById = new Map(allThreats.map((t) => [t.id, t]));
   const vulnById = new Map(allVulnerabilities.map((v) => [v.id, v]));
   const assetById = new Map(assets.map((a) => [a.id, a]));
+  const threat = threatById.get(threatId);
+  const asset = assetById.get(assetId);
+  if (!risk || !threat || !asset) return null;
+  if (!risk.assetIds.includes(assetId)) return null;
+  if (!threat.assetIds.includes(assetId)) return null;
+
   const vulnsByAssetId = buildVulnsByAssetIdMap(allVulnerabilities);
   const maps = { threatById, vulnById, vulnsByAssetId };
+  const assetControlIds = [...(Array.isArray(asset.controlIds) ? asset.controlIds : [])];
+  const seq = args.severitySeq ?? stableSeveritySeqFromTuple(cyberRiskId, assetId, threatId);
+  const scenarioThreatIds = [threatId];
+  const scenarioVulnIds = threat.vulnerabilityIds.filter((vid) => {
+    const v = maps.vulnById.get(vid);
+    return v != null && v.assetIds.includes(assetId);
+  });
 
+  const { threatSeverity, vulnerabilitySeverity } = scenarioSeverityValues(seq);
+  const impact = asset.criticality;
+  const likelihood = threatSeverity * vulnerabilitySeverity;
+  const cyberRiskScore = impact * likelihood;
+  const impactLabel = getFivePointLabel(impact);
+  const threatSeverityLabel = getFivePointLabel(threatSeverity);
+  const vulnerabilitySeverityLabel = getFivePointLabel(vulnerabilitySeverity);
+  const likelihoodLabel = getLikelihoodLabel(likelihood);
+  const cyberRiskScoreLabel = getCyberRiskScoreLabel(cyberRiskScore);
+
+  const threatNamesForTitle = scenarioThreatIds
+    .map((tid) => maps.threatById.get(tid)?.name)
+    .filter(Boolean) as string[];
+  const scenarioThreatPhrase = formatThreatPhrase(threatNamesForTitle);
+
+  const row: MockScenario = {
+    id,
+    name: buildScenarioName(risk.name, scenarioThreatPhrase, asset.name),
+    ownerId: asset.ownerId,
+    cyberRiskId: risk.id,
+    assetId,
+    impact,
+    impactLabel,
+    threatSeverity,
+    threatSeverityLabel,
+    vulnerabilitySeverity,
+    vulnerabilitySeverityLabel,
+    likelihood,
+    likelihoodLabel,
+    cyberRiskScore,
+    cyberRiskScoreLabel,
+    threatIds: scenarioThreatIds,
+    vulnerabilityIds: scenarioVulnIds,
+    scoringRationale: buildScoringRationale(
+      risk.name,
+      scenarioThreatPhrase,
+      asset.name,
+      asset.assetType,
+      impactLabel,
+      threatSeverityLabel,
+      vulnerabilitySeverityLabel,
+      likelihoodLabel,
+      cyberRiskScoreLabel,
+      scenarioThreatIds,
+      scenarioVulnIds,
+      assetId,
+      maps,
+    ),
+    relationships: {
+      cyberRiskId: risk.id,
+      assetId,
+      threatIds: scenarioThreatIds,
+      vulnerabilityIds: scenarioVulnIds,
+      controlIds: [...assetControlIds],
+      mitigationPlanIds: risk.mitigationPlanIds,
+    },
+  };
+  if (assessmentId != null && assessmentId !== "") {
+    row.assessmentId = assessmentId;
+  }
+  return row;
+}
+
+function buildScenarios(): MockScenario[] {
+  const threatById = new Map(allThreats.map((t) => [t.id, t]));
   const list: MockScenario[] = [];
   let seq = 0;
 
@@ -53,75 +165,16 @@ function buildScenarios(): MockScenario[] {
 
       for (const assetId of threat.assetIds) {
         if (!risk.assetIds.includes(assetId)) continue;
-        const asset = assetById.get(assetId);
-        if (!asset) continue;
-
-        const assetControlIds = [...(Array.isArray(asset.controlIds) ? asset.controlIds : [])];
 
         seq += 1;
-        const scenarioThreatIds = [tid];
-        const scenarioVulnIds = threat.vulnerabilityIds.filter((vid) => {
-          const v = maps.vulnById.get(vid);
-          return v != null && v.assetIds.includes(assetId);
-        });
-
-        const { threatSeverity, vulnerabilitySeverity } = scenarioSeverityValues(seq);
-        const impact = asset.criticality;
-        const likelihood = threatSeverity * vulnerabilitySeverity;
-        const cyberRiskScore = impact * likelihood;
-        const impactLabel = getFivePointLabel(impact);
-        const threatSeverityLabel = getFivePointLabel(threatSeverity);
-        const vulnerabilitySeverityLabel = getFivePointLabel(vulnerabilitySeverity);
-        const likelihoodLabel = getLikelihoodLabel(likelihood);
-        const cyberRiskScoreLabel = getCyberRiskScoreLabel(cyberRiskScore);
-
-        const threatNamesForTitle = scenarioThreatIds
-          .map((id) => maps.threatById.get(id)?.name)
-          .filter(Boolean) as string[];
-        const scenarioThreatPhrase = formatThreatPhrase(threatNamesForTitle);
-
-        list.push({
+        const built = buildScenarioFromGraph({
           id: padId("SC", seq),
-          name: buildScenarioName(risk.name, scenarioThreatPhrase, asset.name),
-          ownerId: asset.ownerId,
           cyberRiskId: risk.id,
           assetId,
-          impact,
-          impactLabel,
-          threatSeverity,
-          threatSeverityLabel,
-          vulnerabilitySeverity,
-          vulnerabilitySeverityLabel,
-          likelihood,
-          likelihoodLabel,
-          cyberRiskScore,
-          cyberRiskScoreLabel,
-          threatIds: scenarioThreatIds,
-          vulnerabilityIds: scenarioVulnIds,
-          scoringRationale: buildScoringRationale(
-            risk.name,
-            scenarioThreatPhrase,
-            asset.name,
-            asset.assetType,
-            impactLabel,
-            threatSeverityLabel,
-            vulnerabilitySeverityLabel,
-            likelihoodLabel,
-            cyberRiskScoreLabel,
-            scenarioThreatIds,
-            scenarioVulnIds,
-            assetId,
-            maps,
-          ),
-          relationships: {
-            cyberRiskId: risk.id,
-            assetId,
-            threatIds: scenarioThreatIds,
-            vulnerabilityIds: scenarioVulnIds,
-            controlIds: [...assetControlIds],
-            mitigationPlanIds: risk.mitigationPlanIds,
-          },
+          threatId: tid,
+          severitySeq: seq,
         });
+        if (built) list.push(built);
       }
     }
   }
@@ -212,6 +265,22 @@ export function setScenarioOverridesFromPersistence(
   scenarioOverrides = next && typeof next === "object" ? { ...next } : {};
 }
 
+/** Remove override entries for deleted or replaced scenario ids (e.g. assessment sync purge). */
+export function deleteScenarioOverridesForIds(ids: readonly string[]): void {
+  if (ids.length === 0) return;
+  for (const id of ids) {
+    delete scenarioOverrides[id];
+  }
+}
+
+/** Re-wire relationship mirrors and indexes after in-place `scenarios` mutations. */
+export function applyScenariosGraphRelinks(): void {
+  applyScenarioEntityLinks(scenarios);
+  rebuildScenarioIndex();
+  applyScenarioOverridesToRows();
+  markCatalogDirty();
+}
+
 /** Full scenario rows for catalog snapshots (schema v3). */
 export function getScenariosForPersistence(): MockScenario[] {
   return JSON.parse(JSON.stringify(scenarios)) as MockScenario[];
@@ -221,10 +290,7 @@ export function getScenariosForPersistence(): MockScenario[] {
 export function replaceScenariosFromPersistence(next: MockScenario[]): void {
   scenarios.length = 0;
   scenarios.push(...next);
-  applyScenarioEntityLinks(scenarios);
-  rebuildScenarioIndex();
-  applyScenarioOverridesToRows();
-  markCatalogDirty();
+  applyScenariosGraphRelinks();
 }
 
 /** Rebuild scenario rows from current cyber risks / threats / assets, then re-apply persisted overrides. */
@@ -232,9 +298,7 @@ export function rebuildScenariosFromGraph(): void {
   const next = buildScenarios();
   scenarios.length = 0;
   scenarios.push(...next);
-  applyScenarioEntityLinks(scenarios);
-  rebuildScenarioIndex();
-  applyScenarioOverridesToRows();
+  applyScenariosGraphRelinks();
 }
 
 /** Update stored likelihood / cyber risk labels from active scoring bands (rationale text unchanged). */

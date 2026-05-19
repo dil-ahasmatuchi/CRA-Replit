@@ -15,7 +15,7 @@ describe("assessmentScopedScenarios CRA filter", () => {
     replaceScenariosFromPersistence(backup);
   });
 
-  it("when craAssessmentId is set, keeps scenarios for that CRA and untagged scenarios", () => {
+  it("when craAssessmentId is set, keeps scenarios for that CRA; hides untagged when an owned row covers the same tuple", () => {
     const template = backup.find((s) =>
       cyberRisks.some((cr) => cr.id === s.cyberRiskId && cr.assetIds.includes(s.assetId)),
     );
@@ -43,7 +43,7 @@ describe("assessmentScopedScenarios CRA filter", () => {
     const forCra1 = assessmentScopedScenarios(assetIds, excludedCr, excludedSc, "CRA-001");
     expect(forCra1.some((s) => s.id === "SC-ZZ-SCOPE-TAG-A")).toBe(true);
     expect(forCra1.some((s) => s.id === "SC-ZZ-SCOPE-TAG-B")).toBe(false);
-    expect(forCra1.some((s) => s.id === "SC-ZZ-SCOPE-UNTAG")).toBe(true);
+    expect(forCra1.some((s) => s.id === "SC-ZZ-SCOPE-UNTAG")).toBe(false);
 
     const unscoped = assessmentScopedScenarios(assetIds, excludedCr, excludedSc);
     expect(unscoped.some((s) => s.id === "SC-ZZ-SCOPE-TAG-A")).toBe(true);

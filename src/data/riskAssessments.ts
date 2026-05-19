@@ -269,15 +269,20 @@ function nextCraNumericId(): number {
   return max + 1;
 }
 
+/** Next free `CRA-NNN` id (same numbering as {@link addRiskAssessment}). */
+export function allocateNextCraId(): string {
+  return padId("CRA", nextCraNumericId());
+}
+
 /**
  * Adds a new draft assessment at the front of the catalog (threats-style in-memory session store).
  * Call `subscribeRiskAssessments` from UI to refresh lists.
  */
 export function addRiskAssessment(): MockCyberRiskAssessment {
   const defaultOwnerId = users[0]?.id ?? "USR-001";
-  const n = nextCraNumericId();
+  const id = allocateNextCraId();
   const newRow: MockCyberRiskAssessment = {
-    id: padId("CRA", n),
+    id,
     name: "New cyber risk assessment",
     ownerId: defaultOwnerId,
     status: "Draft",

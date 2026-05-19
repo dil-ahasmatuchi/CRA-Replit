@@ -12312,7 +12312,12 @@
         "AST-148",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-022",
+        "THR-036",
+        "THR-042",
+        "THR-051"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-001",
@@ -12422,7 +12427,12 @@
           "AST-148",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-022",
+          "THR-036",
+          "THR-042",
+          "THR-051"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -12549,7 +12559,10 @@
         "AST-147",
         "AST-150"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-003",
+        "THR-040"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-003",
@@ -12672,7 +12685,10 @@
           "AST-147",
           "AST-150"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-003",
+          "THR-040"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -12800,7 +12816,10 @@
         "AST-149",
         "AST-150"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-018",
+        "THR-031"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-065",
@@ -12924,7 +12943,10 @@
           "AST-149",
           "AST-150"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-018",
+          "THR-031"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13003,7 +13025,13 @@
         "AST-148",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-005",
+        "THR-011",
+        "THR-014",
+        "THR-021",
+        "THR-030"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-143",
@@ -13064,7 +13092,13 @@
           "AST-148",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-005",
+          "THR-011",
+          "THR-014",
+          "THR-021",
+          "THR-030"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13148,7 +13182,10 @@
         "AST-147",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-009",
+        "THR-046"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-005",
@@ -13245,7 +13282,10 @@
           "AST-147",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-009",
+          "THR-046"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13309,7 +13349,14 @@
         "AST-138",
         "AST-145"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-001",
+        "THR-008",
+        "THR-012",
+        "THR-015",
+        "THR-019",
+        "THR-044"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-014",
@@ -13370,7 +13417,14 @@
           "AST-138",
           "AST-145"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-001",
+          "THR-008",
+          "THR-012",
+          "THR-015",
+          "THR-019",
+          "THR-044"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13497,7 +13551,12 @@
         "AST-148",
         "AST-150"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-010",
+        "THR-019",
+        "THR-023",
+        "THR-043"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-017",
@@ -13643,7 +13702,12 @@
           "AST-148",
           "AST-150"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-010",
+          "THR-019",
+          "THR-023",
+          "THR-043"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13707,7 +13771,11 @@
         "AST-138",
         "AST-145"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-007",
+        "THR-036",
+        "THR-048"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-020",
@@ -13765,7 +13833,11 @@
           "AST-138",
           "AST-145"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-007",
+          "THR-036",
+          "THR-048"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13814,7 +13886,11 @@
         "AST-148",
         "AST-150"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-011",
+        "THR-036",
+        "THR-044"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [],
       "mitigationPlanIds": [
@@ -13836,7 +13912,11 @@
           "AST-148",
           "AST-150"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-011",
+          "THR-036",
+          "THR-044"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -13893,7 +13973,10 @@
         "AST-142",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-009",
+        "THR-020"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-149",
@@ -13939,7 +14022,10 @@
           "AST-142",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-009",
+          "THR-020"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -14005,7 +14091,12 @@
         "AST-145",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-004",
+        "THR-006",
+        "THR-029",
+        "THR-030"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-023",
@@ -14075,7 +14166,12 @@
           "AST-145",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-004",
+          "THR-006",
+          "THR-029",
+          "THR-030"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -14144,7 +14240,13 @@
         "AST-147",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-007",
+        "THR-016",
+        "THR-035",
+        "THR-046",
+        "THR-053"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-152",
@@ -14193,7 +14295,13 @@
           "AST-147",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-007",
+          "THR-016",
+          "THR-035",
+          "THR-046",
+          "THR-053"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -14331,7 +14439,10 @@
         "AST-148",
         "AST-150"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-011",
+        "THR-025"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-071",
@@ -14470,7 +14581,10 @@
           "AST-148",
           "AST-150"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-011",
+          "THR-025"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -14530,7 +14644,10 @@
         "AST-141",
         "AST-148"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-001",
+        "THR-035"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [],
       "mitigationPlanIds": [
@@ -14565,7 +14682,10 @@
           "AST-141",
           "AST-148"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-001",
+          "THR-035"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
@@ -14649,7 +14769,12 @@
         "AST-148",
         "AST-149"
       ],
-      "threatIds": [],
+      "threatIds": [
+        "THR-002",
+        "THR-030",
+        "THR-036",
+        "THR-046"
+      ],
       "vulnerabilityIds": [],
       "scenarioIds": [
         "SC-155",
@@ -14722,7 +14847,12 @@
           "AST-148",
           "AST-149"
         ],
-        "threatIds": [],
+        "threatIds": [
+          "THR-002",
+          "THR-030",
+          "THR-036",
+          "THR-046"
+        ],
         "vulnerabilityIds": [],
         "scenarioIds": [],
         "mitigationPlanIds": [
