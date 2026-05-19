@@ -69,4 +69,22 @@ describe("pooja migrated catalog bundle", () => {
       );
     }
   });
+
+  it("scenarios carry CRA assessmentId and duplicate template rows split by assessment", () => {
+    const c = bundledCatalog as PersistedCatalogV3;
+    const craIds = new Set(c.riskAssessments.map((a) => a.id));
+    for (const s of c.scenarios) {
+      expect(s.assessmentId, `scenario ${s.id}`).toBeDefined();
+      expect(craIds.has(s.assessmentId!), `scenario ${s.id} assessment`).toBe(true);
+    }
+    const sameNameCrAsset = c.scenarios.filter(
+      (s) =>
+        s.cyberRiskId === "CR-003" &&
+        s.assetId === "AST-055" &&
+        s.name === "Ransomware and destructive malware on Antivirus Management",
+    );
+    const byCra = new Set(sameNameCrAsset.map((s) => s.assessmentId));
+    expect(byCra.size).toBeGreaterThan(1);
+    expect(sameNameCrAsset.length).toBeGreaterThanOrEqual(byCra.size);
+  });
 });

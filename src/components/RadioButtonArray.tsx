@@ -127,6 +127,7 @@ export default function RadioButtonArray({
                     justifyContent: "flex-start",
                     alignItems: "center",
                     minHeight: 28,
+                    height: "100%",
                   }
                 : {
                     columnGap: 2,
@@ -177,7 +178,7 @@ export default function RadioButtonArray({
         ...(shrinkToContent
           ? {
               width: "fit-content",
-              height: "fit-content",
+              height: 73,
               maxWidth: "fit-content",
               boxSizing: "border-box",
             }

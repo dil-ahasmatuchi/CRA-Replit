@@ -107,14 +107,14 @@ export default function ScoringFormulas({
 
       <Stack
         direction="row"
-        flexWrap="wrap"
+        flexWrap="nowrap"
         useFlexGap
         sx={({ tokens: t }) => ({
           width: shrinkToContent ? "fit-content" : "100%",
           alignItems: "flex-start",
           minHeight: 24,
           height: "fit-content",
-          gap: t.core.spacing["1_5"].value,
+          gap: t.core.spacing["3"].value,
         })}
       >
         <FormulaRow>

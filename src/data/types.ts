@@ -388,6 +388,8 @@ export interface MockScenario {
   ownerId: string;
   cyberRiskId: string;
   assetId: string;
+  /** CRA id this scenario belongs to (Pooja Assessment ASM-* → CRA-*). Omitted on graph-built seed scenarios. */
+  assessmentId?: string;
   impact: FivePointScaleValue;
   impactLabel: FivePointScaleLabel;
   threatSeverity: FivePointScaleValue;

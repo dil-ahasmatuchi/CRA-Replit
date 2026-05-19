@@ -170,6 +170,7 @@ export default function AssessmentResultsTab({
   includedAssetIds,
   excludedScopeCyberRiskIds,
   excludedScopeScenarioIds = new Set(),
+  scenarioScopeAssessmentId,
   onGoToScoring,
   assessmentName = "",
   returnToAssessmentPath = "",
@@ -185,6 +186,8 @@ export default function AssessmentResultsTab({
   includedAssetIds: Set<string>;
   excludedScopeCyberRiskIds: Set<string>;
   excludedScopeScenarioIds?: Set<string>;
+  /** When set, only scenarios for this CRA (or untagged seed scenarios) appear in Results. */
+  scenarioScopeAssessmentId?: string;
   onGoToScoring: () => void;
   /** Matches {@link AssessmentScoringTab} — used when navigating to scenario read-only rationale. */
   assessmentName?: string;
@@ -248,8 +251,9 @@ export default function AssessmentResultsTab({
         includedAssetIds,
         excludedScopeCyberRiskIds,
         excludedScopeScenarioIds,
+        scenarioScopeAssessmentId,
       ),
-    [includedAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds],
+    [includedAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioScopeAssessmentId],
   );
 
   const scenariosByRiskId = useMemo(() => {
@@ -277,6 +281,7 @@ export default function AssessmentResultsTab({
       includedAssetIds,
       excludedScopeCyberRiskIds,
       excludedScopeScenarioIds,
+      scenarioScopeAssessmentId,
     );
     const risks = assessmentScopedCyberRisks(includedAssetIds, excludedScopeCyberRiskIds);
     const risksById = new Map(risks.map((r) => [r.id, r] as const));
@@ -285,6 +290,7 @@ export default function AssessmentResultsTab({
     includedAssetIds,
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
+    scenarioScopeAssessmentId,
     scenariosByRiskId,
     catalogMaskParams,
   ]);
@@ -294,12 +300,14 @@ export default function AssessmentResultsTab({
       includedAssetIds,
       excludedScopeCyberRiskIds,
       excludedScopeScenarioIds,
+      scenarioScopeAssessmentId,
     );
     return applyNewCraCatalogScoreMaskingToAssetResultsRows(raw, scenariosByAssetId, catalogMaskParams);
   }, [
     includedAssetIds,
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
+    scenarioScopeAssessmentId,
     scenariosByAssetId,
     catalogMaskParams,
   ]);

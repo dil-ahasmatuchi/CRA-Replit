@@ -116,6 +116,7 @@ export function buildCyberResultsRowsForScope(
   includedAssetIds: Set<string>,
   excludedScopeCyberRiskIds: Set<string>,
   excludedScopeScenarioIds: Set<string> = new Set(),
+  scenarioScopeAssessmentId?: string,
 ): AssessmentCyberResultsRow[] {
   if (includedAssetIds.size === 0) return [];
   const risks = assessmentScopedCyberRisks(includedAssetIds, excludedScopeCyberRiskIds);
@@ -123,6 +124,7 @@ export function buildCyberResultsRowsForScope(
     includedAssetIds,
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
+    scenarioScopeAssessmentId,
   );
   const byRisk = new Map<string, MockScenario[]>();
   for (const s of scenarioList) {
@@ -269,12 +271,14 @@ export function buildAssetResultRowsForScope(
   includedAssetIds: Set<string>,
   excludedScopeCyberRiskIds: Set<string>,
   excludedScopeScenarioIds: Set<string> = new Set(),
+  scenarioScopeAssessmentId?: string,
 ): AssessmentAssetResultRow[] {
   if (includedAssetIds.size === 0) return [];
   const scenarioList = assessmentScopedScenarios(
     includedAssetIds,
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
+    scenarioScopeAssessmentId,
   );
   const byAsset = new Map<string, MockScenario[]>();
   for (const s of scenarioList) {

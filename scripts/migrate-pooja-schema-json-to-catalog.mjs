@@ -546,6 +546,8 @@ function main() {
   const scenarios = scenarioRows.map((row) => {
     const id = row["Display ID"].trim();
     const name = row.Name.trim();
+    const asmToken = firstIdToken(row.Assessment) ?? fail(`scenario ${id} missing Assessment`);
+    const assessmentId = asmToCra(asmToken) ?? fail(`scenario ${id} bad Assessment ${asmToken}`);
     const assetId = firstIdToken(row.Asset) ?? fail(`scenario ${id} asset`);
     const asset = assetById.get(assetId);
     const crCell = firstIdToken(row["Cyber risk"]);
@@ -566,6 +568,7 @@ function main() {
       ownerId: asset?.ownerId ?? "USR-001",
       cyberRiskId: crCell ?? fail(`scenario ${id} cr`),
       assetId,
+      assessmentId,
       impact,
       impactLabel: fiveLabel(impact),
       threatSeverity,

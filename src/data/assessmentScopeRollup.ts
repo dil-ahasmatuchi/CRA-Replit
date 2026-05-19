@@ -90,15 +90,20 @@ export function assessmentScopedScenarios(
   assetIds: Set<string>,
   excludedCyberRiskIds: Set<string>,
   excludedScenarioIds: ReadonlySet<string> = new Set(),
+  craAssessmentId?: string,
 ): MockScenario[] {
   if (assetIds.size === 0) return [];
   const riskIds = effectiveCyberRiskIdSet(assetIds, excludedCyberRiskIds);
-  return scenarios.filter(
-    (s) =>
-      assetIds.has(s.assetId) &&
-      riskIds.has(s.cyberRiskId) &&
-      !excludedScenarioIds.has(s.id),
-  );
+  const cra = craAssessmentId?.trim();
+  return scenarios.filter((s) => {
+    if (!assetIds.has(s.assetId) || !riskIds.has(s.cyberRiskId) || excludedScenarioIds.has(s.id)) {
+      return false;
+    }
+    if (cra && s.assessmentId != null && s.assessmentId !== cra) {
+      return false;
+    }
+    return true;
+  });
 }
 
 /** @deprecated Prefer assessmentScopedCyberRisks(assetIds, new Set()) */

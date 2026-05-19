@@ -252,6 +252,7 @@ function buildScoringRowsForScope(
   excludedScopeCyberRiskIds: Set<string>,
   excludedScopeScenarioIds: ReadonlySet<string>,
   scenarioNotApplicableIds: ReadonlySet<string> = EMPTY_SCENARIO_NOT_APPLICABLE_IDS,
+  scenarioScopeAssessmentId?: string,
 ): ScoringRow[] {
   if (includedAssetIds.size === 0) return [];
   const risks = assessmentScopedCyberRisks(includedAssetIds, excludedScopeCyberRiskIds);
@@ -259,6 +260,7 @@ function buildScoringRowsForScope(
     includedAssetIds,
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
+    scenarioScopeAssessmentId,
   );
   const byRisk = new Map<string, (typeof scenarioList)[number][]>();
   for (const s of scenarioList) {
@@ -582,6 +584,8 @@ type AssessmentScoringTabProps = {
   scenarioNavManuallyRevealedScoreIds?: ReadonlySet<string>;
   /** Scenario library ids removed from this assessment (hidden from the scoring table). */
   excludedScopeScenarioIds?: ReadonlySet<string>;
+  /** When set, only scenarios for this CRA (or untagged seed scenarios) appear in the grid. */
+  scenarioScopeAssessmentId?: string;
   /** Remove a cyber risk from the assessment scope (same as Scope tab exclude). */
   onRemoveCyberRiskFromAssessment: (cyberRiskId: string) => void;
   /** Remove a scenario from the assessment scope. */
@@ -605,6 +609,7 @@ export default function AssessmentScoringTab({
   onGoToScope,
   scenarioNotApplicableIds = EMPTY_SCENARIO_NOT_APPLICABLE_IDS,
   excludedScopeScenarioIds = EMPTY_SCENARIO_NOT_APPLICABLE_IDS,
+  scenarioScopeAssessmentId,
   isNewCraDraftFlow = false,
   scenarioCatalogScoresReleased = true,
   scenarioManuallyRevealedScoreIds = EMPTY_MANUAL_REVEAL_IDS,
@@ -628,8 +633,9 @@ export default function AssessmentScoringTab({
         excludedScopeCyberRiskIds,
         excludedScopeScenarioIds,
         scenarioNotApplicableIds,
+        scenarioScopeAssessmentId,
       ),
-    [includedAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioNotApplicableIds, catalogVersion],
+    [includedAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioNotApplicableIds, scenarioScopeAssessmentId, catalogVersion],
   );
 
   const catalogMaskContext: ScenarioCatalogMaskContext = useMemo(

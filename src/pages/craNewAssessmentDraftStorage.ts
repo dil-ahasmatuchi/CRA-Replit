@@ -241,7 +241,11 @@ export function advanceCraPhaseToScoringIfEligible(): void {
   if (assetIds.size === 0) return;
   const excluded = new Set(draft.excludedScopeCyberRiskIds);
   const excludedScenarios = new Set(draft.excludedScopeScenarioIds);
-  if (assessmentScopedScenarios(assetIds, excluded, excludedScenarios).length === 0) return;
+  const craScope =
+    typeof draft.assessmentId === "string" && /^CRA-\d+$/.test(draft.assessmentId)
+      ? draft.assessmentId
+      : undefined;
+  if (assessmentScopedScenarios(assetIds, excluded, excludedScenarios, craScope).length === 0) return;
   saveCraNewAssessmentDraft({
     ...draft,
     assessmentPhase: "inProgress",

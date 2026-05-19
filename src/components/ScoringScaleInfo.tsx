@@ -6,7 +6,6 @@ import { ragDataVizColor, type RagDataVizKey } from "../data/ragDataVisualizatio
 /** Left-to-right segments for the CRA 5-point criticality scale (Figma: ITRM — Scoring scale). */
 const SCALE_SEGMENT_RAG: readonly RagDataVizKey[] = ["pos05", "pos04", "neu03", "neg04", "neg05"] as const;
 
-const SCALE_ROW_HEIGHT_PX = 24;
 const BAR_WIDTH_PX = 4;
 
 export type ScoringScaleInfoProps = {
@@ -32,6 +31,7 @@ export default function ScoringScaleInfo({
         alignItems: "flex-start",
         gap: tok.core.spacing["1_5"].value,
         width: "100%",
+        height: 77,
       })}
     >
       <Typography
@@ -58,6 +58,7 @@ export default function ScoringScaleInfo({
           gap: tok.core.spacing["1"].value,
           minWidth: 0,
           width: "100%",
+          height: "100%",
         })}
       >
         <Stack
@@ -66,7 +67,7 @@ export default function ScoringScaleInfo({
           sx={({ tokens: tok }) => ({
             gap: tok.core.spacing["0_25"].value,
             py: tok.core.spacing["0_5"].value,
-            height: SCALE_ROW_HEIGHT_PX,
+            height: 28,
             flexShrink: 0,
             alignItems: "stretch",
           })}

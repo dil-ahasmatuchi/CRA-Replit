@@ -314,6 +314,12 @@ export default function AssessmentDetailsTab() {
     return new Set();
   });
 
+  const scenarioScopeAssessmentId = useMemo((): string | undefined => {
+    if (routeAssessmentId != null && routeAssessmentId !== "") return routeAssessmentId;
+    if (/^CRA-\d+$/.test(assessmentId)) return assessmentId;
+    return undefined;
+  }, [routeAssessmentId, assessmentId]);
+
   const [aiScoringPhase, setAiScoringPhase] = useState<AiScoringPhase>(() => {
     if (mockFromRoute) return normalizeAiScoringPhaseForHydrate(mockFromRoute.aiScoringPhase);
     if (initialDraft) return initialDraft.aiScoringPhase;
@@ -739,11 +745,12 @@ export default function AssessmentDetailsTab() {
           includedScopeAssetIds,
           excludedScopeCyberRiskIds,
           excludedScopeScenarioIds,
+          scenarioScopeAssessmentId,
         ).length >= 1
       );
     }
     return false;
-  }, [assessmentPhase, includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds]);
+  }, [assessmentPhase, includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioScopeAssessmentId]);
 
   const handleSaveDraft = useCallback(() => {
     const catalogAssessmentId =
@@ -793,6 +800,7 @@ export default function AssessmentDetailsTab() {
           excludedScopeVulnerabilityIds: exVForPersist,
           excludedScopeControlIds: exCForPersist,
           excludedScopeScenarioIds: [...excludedScopeScenarioIds],
+          scenarioScopeAssessmentId: catalogAssessmentId,
         });
         updateRiskAssessment(catalogAssessmentId, {
           name: trimmedName || row.name,
@@ -917,6 +925,7 @@ export default function AssessmentDetailsTab() {
           includedScopeAssetIds,
           excludedScopeCyberRiskIds,
           excludedScopeScenarioIds,
+          scenarioScopeAssessmentId,
         ).length < 1
       ) {
         return;
@@ -935,7 +944,7 @@ export default function AssessmentDetailsTab() {
       }, 3000);
       return "processing";
     });
-  }, [assessmentPhase, includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds]);
+  }, [assessmentPhase, includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioScopeAssessmentId]);
 
   useEffect(() => {
     return () => {
@@ -1215,6 +1224,7 @@ export default function AssessmentDetailsTab() {
             includedAssetIds={includedScopeAssetIds}
             excludedScopeCyberRiskIds={excludedScopeCyberRiskIds}
             excludedScopeScenarioIds={excludedScopeScenarioIds}
+            scenarioScopeAssessmentId={scenarioScopeAssessmentId}
             assessmentPhase={assessmentPhase}
             aiScoringPhase={aiScoringPhase}
             scoringType={scoringType}
@@ -1238,6 +1248,7 @@ export default function AssessmentDetailsTab() {
             includedAssetIds={includedScopeAssetIds}
             excludedScopeCyberRiskIds={excludedScopeCyberRiskIds}
             excludedScopeScenarioIds={excludedScopeScenarioIds}
+            scenarioScopeAssessmentId={scenarioScopeAssessmentId}
             onGoToScoring={() => setActiveTab(SCORING_TAB_INDEX)}
             assessmentName={name}
             returnToAssessmentPath={location.pathname}

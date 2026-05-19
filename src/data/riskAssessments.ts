@@ -29,6 +29,8 @@ export type ComputeAssessmentRollupOptions = {
   excludedScopeVulnerabilityIds?: readonly string[];
   excludedScopeControlIds?: readonly string[];
   excludedScopeScenarioIds?: readonly string[];
+  /** When set, scenario ids only include scenarios tagged for this CRA or untagged (seed) scenarios. */
+  scenarioScopeAssessmentId?: string;
 };
 
 /**
@@ -56,6 +58,7 @@ export function computeAssessmentRollupForAssetIds(
   const excludedVuln = new Set(options?.excludedScopeVulnerabilityIds ?? []);
   const excludedControl = new Set(options?.excludedScopeControlIds ?? []);
   const excludedScenario = new Set(options?.excludedScopeScenarioIds ?? []);
+  const scenarioScopeAssessmentId = options?.scenarioScopeAssessmentId?.trim();
   const sortedAssetIds = dedupeIdsPreserveOrder([...assetIds]);
   if (sortedAssetIds.length === 0) {
     return {
@@ -82,7 +85,9 @@ export function computeAssessmentRollupForAssetIds(
     assessmentScopedVulnerabilities(assetSet, excludedVuln).map((v) => v.id),
   );
   const scenarioIds = dedupeIdsPreserveOrder(
-    assessmentScopedScenarios(assetSet, excludedCr, excludedScenario).map((s) => s.id),
+    assessmentScopedScenarios(assetSet, excludedCr, excludedScenario, scenarioScopeAssessmentId).map(
+      (s) => s.id,
+    ),
   );
   return {
     assetIds: sortedAssetIds,
@@ -162,10 +167,13 @@ const ASSESSMENT_META: Meta[] = [
 function buildAssessmentRow(meta: Meta, index: number): MockCyberRiskAssessment {
   const assetIdxs = pickAssetIdxs(index);
   const assetIds = assetIdxs.map((n) => padId("AST", n));
-  const rollup = computeAssessmentRollupForAssetIds(assetIds);
+  const craId = padId("CRA", index + 1);
+  const rollup = computeAssessmentRollupForAssetIds(assetIds, {
+    scenarioScopeAssessmentId: craId,
+  });
 
   return {
-    id: padId("CRA", index + 1),
+    id: craId,
     name: meta.name,
     ownerId: padId("USR", meta.ownerIdx),
     status: meta.status,
