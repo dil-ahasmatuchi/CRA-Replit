@@ -52,4 +52,21 @@ describe("pooja migrated catalog bundle", () => {
       }
     }
   });
+
+  it("vulnerabilities link to valid assets with full multi-asset lists", () => {
+    const c = bundledCatalog as PersistedCatalogV3;
+    const assetIds = new Set(c.assets.map((a) => a.id));
+    const multi = c.vulnerabilities.filter((v) => v.assetIds.length > 1);
+    expect(multi.length).toBeGreaterThan(0);
+
+    for (const v of c.vulnerabilities) {
+      expect(v.assetIds.length).toBeGreaterThan(0);
+      for (const aid of v.assetIds) {
+        expect(assetIds.has(aid), `vulnerability ${v.id} asset ${aid}`).toBe(true);
+      }
+      expect(v.assetIds.includes(v.relationships.assetId), `vulnerability ${v.id} primary asset`).toBe(
+        true,
+      );
+    }
+  });
 });

@@ -184,7 +184,12 @@ function unionAssetIdsForThreats(threatIds: string[]): string[] {
 function vulnerabilityIdsForAssets(assetIds: string[]): string[] {
   const set = new Set<string>();
   for (const v of vulnerabilities) {
-    if (assetIds.includes(v.relationships.assetId)) set.add(v.id);
+    for (const va of v.assetIds) {
+      if (assetIds.includes(va)) {
+        set.add(v.id);
+        break;
+      }
+    }
   }
   return [...set].sort();
 }

@@ -387,7 +387,7 @@ function main() {
     const displayId = row["Display ID"].trim();
     const id = vulnDisplayToMeta.get(displayId);
     const assetIdsParsed = parseIdList(row.Assets).filter((x) => x.startsWith("AST-"));
-    const assetId = assetIdsParsed[0] ?? fail(`vuln ${displayId} missing asset`);
+    const primaryAssetId = assetIdsParsed[0] ?? fail(`vuln ${displayId} missing asset`);
     const ciaParts = row["CIA impacts"].split(/[,;]/).map((x) => x.trim()).filter(Boolean);
     return {
       id,
@@ -401,10 +401,10 @@ function main() {
       ownerIds: [`USR-${String((i % 49) + 1).padStart(3, "0")}`],
       attachments: [],
       cyberRiskIds: [],
-      assetIds: [assetId],
+      assetIds: assetIdsParsed,
       threatIds: [],
       relationships: {
-        assetId,
+        assetId: primaryAssetId,
         cyberRiskIds: [],
         threatIds: [],
         controlIds: [],

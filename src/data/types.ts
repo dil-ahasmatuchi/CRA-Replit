@@ -283,6 +283,7 @@ export const THREAT_ATTACK_VECTOR_OPTIONS: readonly ThreatAttackVector[] = [
 
 /** Cross-entity links; non-asset fields start empty until mock data rewrite catches up. */
 export interface MockVulnerabilityRelationships {
+  /** Primary asset (matches first entry in `MockVulnerability.assetIds` when populated). */
   assetId: string;
   cyberRiskIds: string[];
   threatIds: string[];
@@ -315,7 +316,7 @@ export interface MockVulnerability {
   /** Supplementary references only (not primary structured data). */
   attachments: MockThreatAttachment[];
   cyberRiskIds: string[];
-  /** Single asset per row; mirrors `relationships.assetId`. */
+  /** All assets this category applies to. `relationships.assetId` is the primary (first) for legacy readers. */
   assetIds: string[];
   threatIds: string[];
   relationships: MockVulnerabilityRelationships;

@@ -153,7 +153,7 @@ function buildScenarios(): MockScenario[] {
         const scenarioThreatIds = [tid];
         const scenarioVulnIds = threat.vulnerabilityIds.filter((vid) => {
           const v = maps.vulnById.get(vid);
-          return v?.relationships.assetId === assetId;
+          return v != null && v.assetIds.includes(assetId);
         });
 
         const { threatSeverity, vulnerabilitySeverity } = scenarioSeverityValues(seq);

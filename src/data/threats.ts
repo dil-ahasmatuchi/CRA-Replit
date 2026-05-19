@@ -230,10 +230,11 @@ function vulnIdsForAssets(assetIds: string[]): string[] {
   const set = new Set<string>();
   const byAsset = new Map<string, string[]>();
   for (const v of vulnerabilities) {
-    const aid = v.relationships.assetId;
-    const list = byAsset.get(aid) ?? [];
-    list.push(v.id);
-    byAsset.set(aid, list);
+    for (const aid of v.assetIds) {
+      const list = byAsset.get(aid) ?? [];
+      list.push(v.id);
+      byAsset.set(aid, list);
+    }
   }
   for (const aid of assetIds) {
     for (const vid of byAsset.get(aid) ?? []) set.add(vid);
@@ -301,11 +302,12 @@ function applyCrossEntityLinks(threatList: MockThreat[]): void {
   }
 
   for (const v of vulnerabilities) {
-    const aid = v.relationships.assetId;
-    const a = assetById.get(aid);
-    if (a) {
-      a.vulnerabilityIds.push(v.id);
-      a.relationships.vulnerabilityIds.push(v.id);
+    for (const aid of v.assetIds) {
+      const a = assetById.get(aid);
+      if (a && !a.vulnerabilityIds.includes(v.id)) {
+        a.vulnerabilityIds.push(v.id);
+        a.relationships.vulnerabilityIds.push(v.id);
+      }
     }
   }
 
