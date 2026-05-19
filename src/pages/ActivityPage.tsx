@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { PageHeader, OverflowBreadcrumbs } from "@diligentcorp/atlas-react-bundle";
 import FolderIcon from "@diligentcorp/atlas-react-bundle/icons/Folder";
 import { Accordion, AccordionDetails, AccordionSummary, Box, Button, Stack, Tab, Tabs, useTheme } from "@mui/material";
@@ -9,6 +9,7 @@ import FilterSideSheet from "../components/FilterSideSheet.js";
 import NewToolbar from "../components/NewToolbar.js";
 import MitigationPlanPageSideSheet from "../components/MitigationPlanPageSideSheet.js";
 import ScopedRiskSS from "../components/ScopedRiskSS.js";
+import { useSavedChangesToast } from "../context/SavedChangesToastContext.js";
 import LabelScoreLegend from "../components/LabelScoreLegend.js";
 import LabelValue from "../components/LabelValue.js";
 import PageLayout from "../components/PageLayout.js";
@@ -21,6 +22,10 @@ import ScoringScaleInfo from "../components/ScoringScaleInfo.js";
 import ScoringFormulas from "../components/ScoringFormulas.js";
 import { assets } from "../data/assets.js";
 import { cyberRisks } from "../data/cyberRisks.js";
+import {
+  getCatalogSnapshotVersion,
+  subscribeCatalog,
+} from "../data/persistence/catalogStore.js";
 import {
   atlasPageHeaderNavigationTabsSx,
   atlasPageHeaderTabsSlotProps,
@@ -68,6 +73,7 @@ const AGGREGATION_METHOD_OPTIONS = [
 
 export default function ActivityPage() {
   const location = useLocation();
+  const { showSuccessToast } = useSavedChangesToast();
   const [activeTab, setActiveTab] = useState(0);
   const [isSideSheetOpen, setIsSideSheetOpen] = useState(false);
   const [isFilterSideSheetOpen, setIsFilterSideSheetOpen] = useState(false);
@@ -88,6 +94,21 @@ export default function ActivityPage() {
     setActiveTab(newValue);
   };
 
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
+  );
+
+  const mitigationPlanDemoAssetOptions = useMemo(
+    () =>
+      [...assets]
+        .slice(0, 5)
+        .map((a) => ({ id: a.id, label: a.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [catalogVersion],
+  );
+
   const breadcrumbItems = [
     {
       id: "current",
@@ -95,8 +116,6 @@ export default function ActivityPage() {
       url: location.pathname,
     },
   ];
-
-  const relatedAssetNames = assets.slice(0, 5).map((a) => a.name);
 
   return (
     <PageLayout>
@@ -173,8 +192,11 @@ export default function ActivityPage() {
         <MitigationPlanPageSideSheet
           open={isSideSheetOpen}
           onClose={() => setIsSideSheetOpen(false)}
-          cyberRiskName="Ransomware attack on production databases"
-          relatedAssetNames={relatedAssetNames}
+          cyberRiskName={cyberRisks[0]?.name ?? ""}
+          assetOptions={mitigationPlanDemoAssetOptions}
+          onMitigationPlanCreated={() =>
+            showSuccessToast("Mitigation plan created successfully.")
+          }
         />
 
         <FilterSideSheet

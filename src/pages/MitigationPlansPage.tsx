@@ -8,7 +8,6 @@ import {
   Button,
   Container,
   InputAdornment,
-  Link,
   Stack,
   TextField,
   Typography,
@@ -29,7 +28,7 @@ import {
   QuickFilterControl,
   Toolbar,
 } from "@mui/x-data-grid-pro";
-import { useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { NavLink } from "react-router";
 
 import AddIcon from "@diligentcorp/atlas-react-bundle/icons/Add";
@@ -38,8 +37,20 @@ import FilterIcon from "@diligentcorp/atlas-react-bundle/icons/Filter";
 import ColumnsIcon from "@diligentcorp/atlas-react-bundle/icons/Columns";
 import AvatarIcon from "@diligentcorp/atlas-react-bundle/icons/Avatar";
 
+import MitigationPlanPageSideSheet from "../components/MitigationPlanPageSideSheet.js";
+import MitigationPlanStatusChip from "../components/MitigationPlanStatusChip.js";
+import { useSavedChangesToast } from "../context/SavedChangesToastContext.js";
+import { assets } from "../data/assets.js";
+import { getCyberRiskById } from "../data/cyberRisks.js";
+import { mitigationPlans, mitigationPlanSortTimeMs } from "../data/mitigationPlans.js";
+import {
+  getCatalogSnapshotVersion,
+  subscribeCatalog,
+} from "../data/persistence/catalogStore.js";
+import { getUserById } from "../data/users.js";
+
 interface MitigationPlanRow {
-  id: number;
+  id: string;
   planId: string;
   name: string;
   status: MitigationPlanStatus;
@@ -70,180 +81,66 @@ const SEVERITY_RAG: Record<FivePointScaleValue, RagDataVizKey> = {
   5: "neg05",
 };
 
-import MitigationPlanPageSideSheet from "../components/MitigationPlanPageSideSheet.js";
-import MitigationPlanStatusChip from "../components/MitigationPlanStatusChip.js";
+function formatPlanDueDate(iso: string): string {
+  if (!iso.trim()) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
-const mitigationPlanRows: MitigationPlanRow[] = [
-  {
-    id: 1,
-    planId: "MP-001",
-    name: "Patch critical firewall vulnerabilities",
-    status: "In progress",
-    severityScore: 5,
-    ownerName: "Sarah Chen",
-    ownerInitials: "SC",
-    relatedRiskName: "Unauthorized network access",
-    relatedControlsCount: 4,
-    dueDate: "Apr 30, 2026",
-    assets: 12,
-  },
-  {
-    id: 2,
-    planId: "MP-002",
-    name: "Implement MFA for privileged accounts",
-    status: "In progress",
-    severityScore: 4,
-    ownerName: "James Okoro",
-    ownerInitials: "JO",
-    relatedRiskName: "Credential compromise",
-    relatedControlsCount: 3,
-    dueDate: "May 15, 2026",
-    assets: 8,
-  },
-  {
-    id: 3,
-    planId: "MP-003",
-    name: "Encrypt data at rest in legacy databases",
-    status: "Completed",
-    severityScore: 5,
-    ownerName: "Maria Lopez",
-    ownerInitials: "ML",
-    relatedRiskName: "Sensitive data exposure",
-    relatedControlsCount: 2,
-    dueDate: "Jun 1, 2026",
-    assets: 3,
-  },
-  {
-    id: 4,
-    planId: "MP-004",
-    name: "Remediate third-party API exposure",
-    status: "Overdue",
-    severityScore: 4,
-    ownerName: "Alex Novak",
-    ownerInitials: "AN",
-    relatedRiskName: "Supply chain vulnerability",
-    relatedControlsCount: 5,
-    dueDate: "Apr 15, 2026",
-    assets: 5,
-  },
-  {
-    id: 5,
-    planId: "MP-005",
-    name: "Segmentation of OT network",
-    status: "In progress",
-    severityScore: 5,
-    ownerName: "Priya Sharma",
-    ownerInitials: "PS",
-    relatedRiskName: "Lateral movement in OT systems",
-    relatedControlsCount: 6,
-    dueDate: "Jul 31, 2026",
-    assets: 21,
-  },
-  {
-    id: 6,
-    planId: "MP-006",
-    name: "Phishing simulation and training",
-    status: "Completed",
-    severityScore: 3,
-    ownerName: "David Kim",
-    ownerInitials: "DK",
-    relatedRiskName: "Social engineering attacks",
-    relatedControlsCount: 2,
-    dueDate: "May 1, 2026",
-    assets: 2,
-  },
-  {
-    id: 7,
-    planId: "MP-007",
-    name: "Harden cloud storage permissions",
-    status: "Overdue",
-    severityScore: 4,
-    ownerName: "Rachel Torres",
-    ownerInitials: "RT",
-    relatedRiskName: "Cloud misconfiguration",
-    relatedControlsCount: 4,
-    dueDate: "Apr 20, 2026",
-    assets: 9,
-  },
-  {
-    id: 8,
-    planId: "MP-008",
-    name: "Deploy endpoint detection and response",
-    status: "In progress",
-    severityScore: 3,
-    ownerName: "Michael Bryant",
-    ownerInitials: "MB",
-    relatedRiskName: "Malware propagation",
-    relatedControlsCount: 5,
-    dueDate: "Jun 15, 2026",
-    assets: 34,
-  },
-  {
-    id: 9,
-    planId: "MP-009",
-    name: "Disaster recovery tabletop exercise",
-    status: "In progress",
-    severityScore: 2,
-    ownerName: "Linda Zhao",
-    ownerInitials: "LZ",
-    relatedRiskName: "Business continuity failure",
-    relatedControlsCount: 1,
-    dueDate: "May 30, 2026",
-    assets: 15,
-  },
-  {
-    id: 10,
-    planId: "MP-010",
-    name: "Rotate and vault service credentials",
-    status: "Completed",
-    severityScore: 4,
-    ownerName: "Ethan Patel",
-    ownerInitials: "EP",
-    relatedRiskName: "Credential theft via exposed secrets",
-    relatedControlsCount: 3,
-    dueDate: "Apr 25, 2026",
-    assets: 7,
-  },
-  {
-    id: 11,
-    planId: "MP-011",
-    name: "Legacy system access controls upgrade",
-    status: "Overdue",
-    severityScore: 5,
-    ownerName: "Sarah Chen",
-    ownerInitials: "SC",
-    relatedRiskName: "Unauthorized access to legacy systems",
-    relatedControlsCount: 7,
-    dueDate: "Feb 28, 2026",
-    assets: 14,
-  },
-  {
-    id: 12,
-    planId: "MP-012",
-    name: "Network intrusion detection rollout",
-    status: "Overdue",
-    severityScore: 3,
-    ownerName: "James Okoro",
-    ownerInitials: "JO",
-    relatedRiskName: "Undetected lateral movement",
-    relatedControlsCount: 4,
-    dueDate: "Mar 15, 2026",
-    assets: 18,
-  },
-  {
-    id: 13,
-    planId: "MP-013",
-    name: "Vendor security assessment backlog",
-    status: "Overdue",
-    severityScore: 4,
-    ownerName: "Priya Sharma",
-    ownerInitials: "PS",
-    relatedRiskName: "Third-party data breach",
-    relatedControlsCount: 3,
-    dueDate: "Jan 31, 2026",
-    assets: 6,
-  },
-];
+function relatedRiskLabel(cyberRiskIds: readonly string[]): string {
+  const names = cyberRiskIds
+    .map((id) => getCyberRiskById(id)?.name)
+    .filter((n): n is string => Boolean(n && n.trim()));
+  if (names.length === 0) return "—";
+  if (names.length === 1) return names[0]!;
+  return `${names[0]!} (+${names.length - 1})`;
+}
+
+function distinctAssetCountForCyberRisks(cyberRiskIds: readonly string[]): number {
+  const ids = new Set<string>();
+  for (const rid of cyberRiskIds) {
+    const risk = getCyberRiskById(rid);
+    if (!risk) continue;
+    const list = risk.assetIds ?? [];
+    for (const aid of list) ids.add(aid);
+  }
+  return ids.size;
+}
+
+function buildMitigationPlanGridRows(): MitigationPlanRow[] {
+  const sorted = [...mitigationPlans].sort(
+    (a, b) => mitigationPlanSortTimeMs(b) - mitigationPlanSortTimeMs(a),
+  );
+  return sorted.map((plan) => {
+    const owner = getUserById(plan.ownerId);
+    const assetCount =
+      plan.assetIds != null && plan.assetIds.length > 0
+        ? plan.assetIds.length
+        : distinctAssetCountForCyberRisks(plan.cyberRiskIds);
+    const controlsCount =
+      plan.controlIds.length > 0
+        ? plan.controlIds.length
+        : (plan.relatedControlNames?.length ?? 0);
+    return {
+      id: plan.id,
+      planId: plan.id,
+      name: plan.name,
+      status: plan.status,
+      severityScore: plan.severity,
+      ownerName: owner?.fullName ?? "Unknown",
+      ownerInitials: owner?.initials ?? "",
+      relatedRiskName: relatedRiskLabel(plan.cyberRiskIds),
+      relatedControlsCount: controlsCount,
+      dueDate: formatPlanDueDate(plan.dueDate),
+      assets: assetCount,
+    };
+  });
+}
 
 function SeverityLevelCell({ value }: { value: FivePointScaleValue }) {
   const { tokens } = useTheme();
@@ -345,7 +242,18 @@ function CustomToolbar() {
   );
 }
 
-function MitigationPlansDataGrid() {
+function MitigationPlansDataGrid({
+  onMitigationPlanNameClick,
+}: {
+  onMitigationPlanNameClick: (planId: string) => void;
+}) {
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
+  );
+  const rows = useMemo(() => buildMitigationPlanGridRows(), [catalogVersion]);
+
   const columns: GridColDef<MitigationPlanRow>[] = [
     {
       field: "planId",
@@ -358,9 +266,17 @@ function MitigationPlansDataGrid() {
       flex: 1,
       minWidth: 250,
       renderCell: (params: GridRenderCellParams<MitigationPlanRow>) => (
-        <Link href="#" underline="hover" sx={{ cursor: "pointer" }}>
-          {params.value}
-        </Link>
+        <Typography
+          component="span"
+          variant="textMd"
+          sx={({ tokens }) => ({
+            cursor: "pointer",
+            color: tokens.semantic.color.action.primary.default.value,
+            textDecoration: "underline",
+          })}
+        >
+          {params.value as string}
+        </Typography>
       ),
     },
     {
@@ -419,8 +335,9 @@ function MitigationPlansDataGrid() {
   return (
     <Box sx={{ width: "100%" }}>
       <DataGridPro
-        rows={mitigationPlanRows}
+        rows={rows}
         columns={columns}
+        getRowId={(row) => row.id}
         pagination
         pageSizeOptions={[5, 10, 25]}
         initialState={{
@@ -428,6 +345,11 @@ function MitigationPlansDataGrid() {
         }}
         disableRowSelectionOnClick
         showToolbar
+        onCellClick={(params, event) => {
+          if (params.field !== "name") return;
+          event.defaultMuiPrevented = true;
+          onMitigationPlanNameClick(params.row.planId);
+        }}
         slots={{
           toolbar: CustomToolbar,
         }}
@@ -450,6 +372,37 @@ function MitigationPlansDataGrid() {
 
 export default function MitigationPlansPage() {
   const [mitigationPlanSideSheetOpen, setMitigationPlanSideSheetOpen] = useState(false);
+  const [editingMitigationPlanId, setEditingMitigationPlanId] = useState<string | null>(null);
+  const { showSuccessToast } = useSavedChangesToast();
+
+  const closeSideSheet = useCallback(() => {
+    setMitigationPlanSideSheetOpen(false);
+    setEditingMitigationPlanId(null);
+  }, []);
+
+  const openCreateSideSheet = useCallback(() => {
+    setEditingMitigationPlanId(null);
+    setMitigationPlanSideSheetOpen(true);
+  }, []);
+
+  const openEditSideSheet = useCallback((planId: string) => {
+    setEditingMitigationPlanId(planId);
+    setMitigationPlanSideSheetOpen(true);
+  }, []);
+
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
+  );
+
+  const mitigationPlanAssetOptions = useMemo(
+    () =>
+      [...assets]
+        .map((a) => ({ id: a.id, label: a.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [catalogVersion],
+  );
 
   return (
     <Container sx={{ py: 2 }}>
@@ -481,18 +434,29 @@ export default function MitigationPlansPage() {
             <Button
               variant="contained"
               startIcon={<AddIcon />}
-              onClick={() => setMitigationPlanSideSheetOpen(true)}
+              onClick={openCreateSideSheet}
             >
               New mitigation plan
             </Button>
           }
         />
-        <MitigationPlansDataGrid />
+        <MitigationPlansDataGrid onMitigationPlanNameClick={openEditSideSheet} />
         <MitigationPlanPageSideSheet
+          key={mitigationPlanSideSheetOpen ? (editingMitigationPlanId ?? "create") : "closed"}
           open={mitigationPlanSideSheetOpen}
-          onClose={() => setMitigationPlanSideSheetOpen(false)}
+          onClose={closeSideSheet}
           cyberRiskName=""
-          relatedAssetNames={[]}
+          editingPlanId={editingMitigationPlanId}
+          assetOptions={mitigationPlanAssetOptions}
+          onMitigationPlanCreated={() =>
+            showSuccessToast("Mitigation plan created successfully.")
+          }
+          onMitigationPlanUpdated={() =>
+            showSuccessToast("Mitigation plan saved successfully.")
+          }
+          onMitigationPlanDeleted={() =>
+            showSuccessToast("Mitigation plan deleted.")
+          }
         />
       </Stack>
     </Container>

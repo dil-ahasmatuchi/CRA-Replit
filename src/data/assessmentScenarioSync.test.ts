@@ -1,11 +1,16 @@
 import { afterAll, describe, expect, it } from "vitest";
-import {
-  assessmentScopedCyberRisks,
-  assessmentScopedScenarios,
-  buildAssessmentOwnedScenarioId,
-} from "./assessmentScopeRollup.js";
+import { assessmentScopedCyberRisks, assessmentScopedScenarios } from "./assessmentScopeRollup.js";
 import { getScenariosForPersistence, replaceScenariosFromPersistence } from "./scenarios.js";
 import { syncAssessmentOwnedScenarios } from "./assessmentScenarioSync.js";
+
+function findFirstOwnedScenarioIdFor(craId: string, assetId: string): string | undefined {
+  return getScenariosForPersistence().find(
+    (s) =>
+      s.assessmentId === craId &&
+      s.assetId === assetId &&
+      s.id.startsWith(`SCA-${craId}-`),
+  )?.id;
+}
 
 describe("syncAssessmentOwnedScenarios", () => {
   const backup = getScenariosForPersistence();
@@ -18,9 +23,7 @@ describe("syncAssessmentOwnedScenarios", () => {
     const craId = "CRA-SYNC-TEST-001";
     const risks = assessmentScopedCyberRisks(new Set(["AST-001"]), new Set());
     expect(risks.length).toBeGreaterThan(0);
-    const risk = risks[0]!;
     const assetId = "AST-001";
-    const expectedId = buildAssessmentOwnedScenarioId(craId, risk.id, assetId, risk.threatIds[0]!);
 
     const r1 = syncAssessmentOwnedScenarios({
       craId,
@@ -28,7 +31,9 @@ describe("syncAssessmentOwnedScenarios", () => {
       excludedScopeCyberRiskIds: new Set(),
     });
     expect(r1.addedIds.length + r1.updatedIds.length).toBeGreaterThan(0);
-    expect(r1.addedIds.includes(expectedId) || r1.updatedIds.includes(expectedId)).toBe(true);
+    const expectedId = findFirstOwnedScenarioIdFor(craId, assetId);
+    expect(expectedId).toBeDefined();
+    expect(r1.addedIds.includes(expectedId!) || r1.updatedIds.includes(expectedId!)).toBe(true);
 
     const r2 = syncAssessmentOwnedScenarios({
       craId,
@@ -44,16 +49,15 @@ describe("syncAssessmentOwnedScenarios", () => {
 
   it("removes owned rows when tuple leaves scope and skips create when scenario id is excluded", () => {
     const craId = "CRA-SYNC-TEST-002";
-    const risks = assessmentScopedCyberRisks(new Set(["AST-001"]), new Set());
-    const risk = risks[0]!;
     const assetId = "AST-001";
-    const sid = buildAssessmentOwnedScenarioId(craId, risk.id, assetId, risk.threatIds[0]!);
 
     syncAssessmentOwnedScenarios({
       craId,
       includedAssetIds: new Set([assetId]),
       excludedScopeCyberRiskIds: new Set(),
     });
+    const sid = findFirstOwnedScenarioIdFor(craId, assetId);
+    expect(sid).toBeDefined();
     expect(getScenariosForPersistence().some((s) => s.id === sid)).toBe(true);
 
     const removed = syncAssessmentOwnedScenarios({
@@ -61,14 +65,14 @@ describe("syncAssessmentOwnedScenarios", () => {
       includedAssetIds: new Set<string>(),
       excludedScopeCyberRiskIds: new Set(),
     });
-    expect(removed.removedIds).toContain(sid);
+    expect(removed.removedIds).toContain(sid!);
     expect(getScenariosForPersistence().some((s) => s.id === sid)).toBe(false);
 
     syncAssessmentOwnedScenarios({
       craId,
       includedAssetIds: new Set([assetId]),
       excludedScopeCyberRiskIds: new Set(),
-      excludedScopeScenarioIds: new Set([sid]),
+      excludedScopeScenarioIds: new Set([sid!]),
     });
     expect(getScenariosForPersistence().some((s) => s.id === sid)).toBe(false);
   });

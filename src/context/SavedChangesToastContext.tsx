@@ -29,6 +29,7 @@ export function mergeSavedChangesNavigateState(
 
 type SavedChangesToastContextValue = {
   notifySavedChanges: () => void;
+  showSuccessToast: (message: string) => void;
 };
 
 const SavedChangesToastContext = createContext<SavedChangesToastContextValue | null>(null);
@@ -42,23 +43,33 @@ export function useSavedChangesToast(): SavedChangesToastContextValue {
 }
 
 export function SavedChangesToastProvider({ children }: { children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+  const [toast, setToast] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
   const location = useLocation();
   const navigate = useNavigate();
 
-  const notifySavedChanges = useCallback(() => {
-    setOpen(true);
+  const showSuccessToast = useCallback((message: string) => {
+    setToast({ open: true, message });
   }, []);
+
+  const notifySavedChanges = useCallback(() => {
+    showSuccessToast("Changes were saved.");
+  }, [showSuccessToast]);
 
   const handleClose = useCallback(
     (_event: SyntheticEvent | Event, reason: SnackbarCloseReason) => {
       if (reason === "clickaway") return;
-      setOpen(false);
+      setToast((t) => ({ ...t, open: false }));
     },
     [],
   );
 
-  const value = useMemo(() => ({ notifySavedChanges }), [notifySavedChanges]);
+  const value = useMemo(
+    () => ({ notifySavedChanges, showSuccessToast }),
+    [notifySavedChanges, showSuccessToast],
+  );
 
   useEffect(() => {
     const raw = location.state;
@@ -66,7 +77,7 @@ export function SavedChangesToastProvider({ children }: { children: ReactNode })
     const record = raw as Record<string, unknown>;
     if (!record[SAVED_CHANGES_TOAST_STATE_KEY]) return;
 
-    setOpen(true);
+    setToast({ open: true, message: "Changes were saved." });
     const { [SAVED_CHANGES_TOAST_STATE_KEY]: _removed, ...rest } = record;
     const nextState = Object.keys(rest).length ? rest : undefined;
     void navigate(
@@ -78,9 +89,9 @@ export function SavedChangesToastProvider({ children }: { children: ReactNode })
   return (
     <SavedChangesToastContext.Provider value={value}>
       {children}
-      <Snackbar open={open} autoHideDuration={5000} onClose={handleClose}>
+      <Snackbar open={toast.open} autoHideDuration={5000} onClose={handleClose}>
         <Alert severity="success" aria-live="polite">
-          Changes were saved.
+          {toast.message}
         </Alert>
       </Snackbar>
     </SavedChangesToastContext.Provider>

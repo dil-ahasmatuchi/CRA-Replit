@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import { SectionHeader } from "@diligentcorp/atlas-react-bundle";
 import { useNavigate } from "react-router";
 
@@ -17,9 +17,14 @@ import ResultsHero from "../components/ResultsHero.js";
 import ScoringInfoCardRead from "../components/ScoringInfoCardRead.js";
 import { ResultsRiskChip, ResultsTreeData } from "../components/ResultsTreeData.js";
 import type { MatrixSelectionPayload } from "../components/RisksMatrix.js";
+import { useSavedChangesToast } from "../context/SavedChangesToastContext.js";
 import { Box, Link, Stack } from "@mui/material";
 import { DataGridPro, type GridColDef, type GridRenderCellParams } from "@mui/x-data-grid-pro";
 import { assets } from "../data/assets.js";
+import {
+  getCatalogSnapshotVersion,
+  subscribeCatalog,
+} from "../data/persistence/catalogStore.js";
 import {
   applyNewCraCatalogScoreMaskingToAssetResultsRows,
   applyNewCraCatalogScoreMaskingToCyberResultsRows,
@@ -204,6 +209,7 @@ export default function AssessmentResultsTab({
   scenarioNotApplicableIds?: ReadonlySet<string>;
 }) {
   const navigate = useNavigate();
+  const { showSuccessToast } = useSavedChangesToast();
 
   const goToScenarioReadOnly = useCallback(
     (scenarioId: string) => {
@@ -316,9 +322,20 @@ export default function AssessmentResultsTab({
     scenarioListInScope,
     catalogMaskParams,
   );
-  const relatedAssetNames = useMemo(
-    () => assets.filter((a) => includedAssetIds.has(a.id)).map((a) => a.name),
-    [includedAssetIds],
+
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
+  );
+
+  const assetOptions = useMemo(
+    () =>
+      assets
+        .filter((a) => includedAssetIds.has(a.id))
+        .map((a) => ({ id: a.id, label: a.name }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [includedAssetIds, catalogVersion],
   );
 
   const [cyberSectionExpanded, setCyberSectionExpanded] = useState(true);
@@ -470,7 +487,10 @@ export default function AssessmentResultsTab({
         open={sideSheetOpen}
         onClose={() => setSideSheetOpen(false)}
         cyberRiskName={sideSheetCyberRiskName}
-        relatedAssetNames={relatedAssetNames}
+        assetOptions={assetOptions}
+        onMitigationPlanCreated={() =>
+          showSuccessToast("Mitigation plan created successfully.")
+        }
       />
 
       <FilterSideSheet

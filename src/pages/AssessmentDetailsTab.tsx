@@ -368,9 +368,10 @@ export default function AssessmentDetailsTab() {
       [
         [...includedScopeAssetIds].sort().join("\0"),
         [...excludedScopeCyberRiskIds].sort().join("\0"),
+        [...excludedScopeThreatIds].sort().join("\0"),
         [...excludedScopeScenarioIds].sort().join("\0"),
       ].join("|"),
-    [includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds],
+    [includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeThreatIds, excludedScopeScenarioIds],
   );
 
   /** `/new` draft: allocate next CRA id once scope has assets so owned scenarios can be tagged. */
@@ -408,6 +409,7 @@ export default function AssessmentDetailsTab() {
       includedAssetIds: includedScopeAssetIds,
       excludedScopeCyberRiskIds,
       excludedScopeScenarioIds,
+      excludedScopeThreatIds,
     });
 
     if (result.removedIds.length > 0) {
@@ -443,6 +445,7 @@ export default function AssessmentDetailsTab() {
     assessmentId,
     assessmentScenarioScopeSignature,
     excludedScopeCyberRiskIds,
+    excludedScopeThreatIds,
     excludedScopeScenarioIds,
   ]);
 

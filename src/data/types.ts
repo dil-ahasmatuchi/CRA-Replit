@@ -442,6 +442,13 @@ export interface MockMitigationPlan {
   controlIds: string[];
   cyberRiskIds: string[];
   assessmentIds: string[];
+  /** Side-sheet selected assets (prototype); when set, grid prefers this over inferred risk assets. */
+  assetIds?: string[];
+  actionPlan?: string;
+  /** Related controls chosen by label when they do not map to catalog `CTL-*` ids. */
+  relatedControlNames?: string[];
+  /** ISO 8601 timestamp for catalog sort / display (prototype). */
+  createdAt?: string;
 }
 
 /** Cross-catalog links for strategic objectives (populated in `objectives.ts`). */

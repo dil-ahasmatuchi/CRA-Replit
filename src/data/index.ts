@@ -81,7 +81,13 @@ export {
   isVulnerabilityActiveForAssessment,
 } from "./vulnerabilities.js";
 export { controls, getControlById } from "./controls.js";
-export { cyberRisks, getCyberRiskById } from "./cyberRisks.js";
+export {
+  cyberRisks,
+  getCyberRiskById,
+  findCyberRiskByExactName,
+  linkMitigationPlanToCyberRisks,
+  unlinkMitigationPlanFromCyberRisks,
+} from "./cyberRisks.js";
 export {
   scenarios,
   getScenarioById,
@@ -106,7 +112,16 @@ export {
   subscribeRiskAssessments,
   getRiskAssessmentsSnapshotVersion,
 } from "./riskAssessments.js";
-export { mitigationPlans, getMitigationPlanById } from "./mitigationPlans.js";
+export {
+  mitigationPlans,
+  getMitigationPlanById,
+  createMitigationPlan,
+  updateMitigationPlan,
+  deleteMitigationPlan,
+  mitigationPlanSortTimeMs,
+  type CreateMitigationPlanInput,
+  type UpdateMitigationPlanInput,
+} from "./mitigationPlans.js";
 export { objectives, getObjectiveById } from "./objectives.js";
 export { processes, getProcessById } from "./processes.js";
 
@@ -119,6 +134,7 @@ export {
   markCatalogDirty,
   subscribeCatalog,
   getCatalogSnapshotVersion,
+  touchCatalogForImmediateUiRefresh,
   resetPrototypeCatalog,
   resetPrototypeCatalogAsync,
 } from "./persistence/catalogStore.js";

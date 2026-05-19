@@ -1,6 +1,9 @@
-import { assessmentScopedCyberRisks, buildAssessmentOwnedScenarioId } from "./assessmentScopeRollup.js";
+import {
+  assessmentScopedCyberRisks,
+  assessmentScopedThreats,
+  buildAssessmentOwnedScenarioId,
+} from "./assessmentScopeRollup.js";
 import type { MockScenario } from "./types.js";
-import { threats as allThreats } from "./threats.js";
 import {
   applyScenariosGraphRelinks,
   buildScenarioFromGraph,
@@ -37,6 +40,7 @@ function assertScenarioIdOwnedByCraOrFree(id: string, craId: string): void {
 /**
  * Ensures catalog `scenarios` contains exactly the assessment-owned rows for the current scope:
  * add / refresh tuples in scope, remove rows whose tuple left scope.
+ * Tuples are every (scoped cyber risk × assessment-scoped threat × shared included asset), matching the asset-based threat closure used elsewhere (not only `risk.threatIds`).
  * Suppressed tuples (`excludedScopeScenarioIds`) are not created if missing; existing rows stay and are refreshed from graph.
  */
 export function syncAssessmentOwnedScenarios(args: {
@@ -44,6 +48,7 @@ export function syncAssessmentOwnedScenarios(args: {
   includedAssetIds: ReadonlySet<string>;
   excludedScopeCyberRiskIds: ReadonlySet<string>;
   excludedScopeScenarioIds?: ReadonlySet<string>;
+  excludedScopeThreatIds?: ReadonlySet<string>;
 }): AssessmentScenarioSyncResult {
   const craId = args.craId.trim();
   const excludedScenario = args.excludedScopeScenarioIds ?? new Set<string>();
@@ -69,22 +74,22 @@ export function syncAssessmentOwnedScenarios(args: {
     return { craId, addedIds, updatedIds, removedIds };
   }
 
-  const threatById = new Map(allThreats.map((t) => [t.id, t]));
   const tupleById = new Map<string, ScenarioTuple>();
 
-  const scopedRisks = assessmentScopedCyberRisks(
-    new Set(args.includedAssetIds),
-    new Set(args.excludedScopeCyberRiskIds),
-  );
+  const included = new Set(args.includedAssetIds);
+  const excludedCr = new Set(args.excludedScopeCyberRiskIds);
+  const excludedThreat = new Set(args.excludedScopeThreatIds ?? []);
+
+  const scopedRisks = assessmentScopedCyberRisks(included, excludedCr);
+  const scopedThreats = assessmentScopedThreats(included, excludedCr, excludedThreat);
+
   for (const risk of scopedRisks) {
-    for (const tid of risk.threatIds) {
-      const threat = threatById.get(tid);
-      if (!threat) continue;
+    for (const threat of scopedThreats) {
       for (const assetId of threat.assetIds) {
         if (!risk.assetIds.includes(assetId)) continue;
-        if (!args.includedAssetIds.has(assetId)) continue;
-        const id = buildAssessmentOwnedScenarioId(craId, risk.id, assetId, tid);
-        tupleById.set(id, { cyberRiskId: risk.id, assetId, threatId: tid });
+        if (!included.has(assetId)) continue;
+        const id = buildAssessmentOwnedScenarioId(craId, risk.id, assetId, threat.id);
+        tupleById.set(id, { cyberRiskId: risk.id, assetId, threatId: threat.id });
       }
     }
   }

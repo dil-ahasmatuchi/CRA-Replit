@@ -370,6 +370,39 @@ export function getCyberRiskById(id: string): MockCyberRisk | undefined {
   return riskById.get(id);
 }
 
+export function findCyberRiskByExactName(name: string): MockCyberRisk | undefined {
+  const t = name.trim();
+  if (!t) return undefined;
+  return cyberRisks.find((r) => r.name === t);
+}
+
+export function linkMitigationPlanToCyberRisks(
+  planId: string,
+  cyberRiskIds: readonly string[],
+): void {
+  for (const id of cyberRiskIds) {
+    const r = riskById.get(id);
+    if (!r) continue;
+    dedupePush(r.mitigationPlanIds, planId);
+    dedupePush(r.relationships.mitigationPlanIds, planId);
+  }
+  syncIndirectLinksFromCyberRisks();
+}
+
+/** Removes `planId` from the given risks (both top-level and relationships) and re-syncs indirect links. */
+export function unlinkMitigationPlanFromCyberRisks(
+  planId: string,
+  cyberRiskIds: readonly string[],
+): void {
+  for (const id of cyberRiskIds) {
+    const r = riskById.get(id);
+    if (!r) continue;
+    r.mitigationPlanIds = r.mitigationPlanIds.filter((mid) => mid !== planId);
+    r.relationships.mitigationPlanIds = r.relationships.mitigationPlanIds.filter((mid) => mid !== planId);
+  }
+  syncIndirectLinksFromCyberRisks();
+}
+
 export function updateCyberRisk(id: string, patch: Partial<MockCyberRisk>): void {
   const r = riskById.get(id);
   if (!r) return;

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { Footer } from "@diligentcorp/atlas-react-bundle";
 import {
   Autocomplete,
@@ -29,7 +29,26 @@ import ClearIcon from "@diligentcorp/atlas-react-bundle/icons/Clear";
 import ExpandDownIcon from "@diligentcorp/atlas-react-bundle/icons/ExpandDown";
 import UploadIcon from "@diligentcorp/atlas-react-bundle/icons/Upload";
 
-import { cyberRisks } from "../data/cyberRisks.js";
+import { cyberRisks, findCyberRiskByExactName, getCyberRiskById } from "../data/cyberRisks.js";
+import { getControlById } from "../data/controls.js";
+import {
+  createMitigationPlan,
+  deleteMitigationPlan,
+  getMitigationPlanById,
+  updateMitigationPlan,
+} from "../data/mitigationPlans.js";
+import {
+  getCatalogSnapshotVersion,
+  subscribeCatalog,
+} from "../data/persistence/catalogStore.js";
+import type { MockMitigationPlan } from "../data/types.js";
+import {
+  getFivePointLabel,
+  padId,
+  type FivePointScaleLabel,
+  type FivePointScaleValue,
+} from "../data/types.js";
+import { mockUserEmail, users } from "../data/users.js";
 
 export const SEVERITY_OPTIONS = [
   "1 - Very low",
@@ -56,14 +75,49 @@ export const RELATED_CONTROLS_OPTIONS = [
   "Business Impact Analysis",
 ];
 
-const CYBER_RISK_NAME_OPTIONS = cyberRisks.map((r) => r.name);
+/** Maps side-sheet “Related Org. unit” labels to catalog `orgUnitId` values. */
+const ORG_UNIT_OPTION_TO_BU_ID: Record<string, string> = {
+  "Chicago - Operations division - Incident response implementation": "BU-006",
+  "New York - IT division - Security operations": "BU-002",
+  "London - Engineering - Cloud infrastructure": "BU-003",
+};
 
-function buildRiskAutocompleteOptions(extraName: string): string[] {
-  const trimmed = extraName.trim();
-  if (trimmed && !CYBER_RISK_NAME_OPTIONS.includes(trimmed)) {
-    return [trimmed, ...CYBER_RISK_NAME_OPTIONS];
+/** Inverse map for hydrating the org unit `Select` from persisted `orgUnitId`. */
+const ORG_UNIT_BU_ID_TO_OPTION: Record<string, string> = Object.fromEntries(
+  Object.entries(ORG_UNIT_OPTION_TO_BU_ID).map(([label, buId]) => [buId, label]),
+);
+
+const DEFAULT_ORG_UNIT_ID = "BU-015";
+
+function parseMitigationPlanSeverity(raw: string): {
+  value: FivePointScaleValue;
+  label: FivePointScaleLabel;
+} {
+  if (!raw.trim()) {
+    const value = 3 as FivePointScaleValue;
+    return { value, label: getFivePointLabel(value) };
   }
-  return CYBER_RISK_NAME_OPTIONS;
+  const m = /^(\d)/.exec(raw);
+  const n = m ? parseInt(m[1]!, 10) : 3;
+  const clamped = (n >= 1 && n <= 5 ? n : 3) as FivePointScaleValue;
+  return { value: clamped, label: getFivePointLabel(clamped) };
+}
+
+function buildRiskAutocompleteOptions(
+  extraName: string,
+  catalogRiskNames: readonly string[],
+): string[] {
+  const trimmed = extraName.trim();
+  if (trimmed && !catalogRiskNames.includes(trimmed)) {
+    return [trimmed, ...catalogRiskNames];
+  }
+  return [...catalogRiskNames];
+}
+
+/** Ensures persisted control labels appear as `MenuItem`s even when not in the default library list. */
+function buildRelatedControlsMenuOptions(selected: readonly string[]): string[] {
+  const extras = selected.filter((c) => !RELATED_CONTROLS_OPTIONS.includes(c));
+  return [...RELATED_CONTROLS_OPTIONS, ...extras];
 }
 
 function PlaceholderText({ text = "Choose an option" }: { text?: string }) {
@@ -82,22 +136,45 @@ function PlaceholderText({ text = "Choose an option" }: { text?: string }) {
   );
 }
 
+type UserLookupOption = {
+  id: string;
+  label: string;
+  email: string;
+  type: "user";
+};
+
+/** Asset rows for the mitigation plan “Assets” multiselect (parent supplies full catalog or a scoped subset). */
+export type MitigationPlanAssetOption = { id: string; label: string };
+
 export type MitigationPlanPageSideSheetProps = {
   open: boolean;
   onClose: () => void;
   /** When set (e.g. opened from a cyber risk row), pre-fills the risk Autocomplete. */
   cyberRiskName: string;
-  relatedAssetNames: string[];
+  /** When set with the sheet open, form is hydrated from the catalog plan (edit mode). */
+  editingPlanId?: string | null;
+  /** Selectable assets (e.g. full catalog from Mitigation plans page, or assessment-scoped ids from results tab). */
+  assetOptions: MitigationPlanAssetOption[];
+  /** Called after a plan is persisted to the catalog (e.g. show a success toast). */
+  onMitigationPlanCreated?: (plan: MockMitigationPlan) => void;
+  /** Called after an existing plan is updated (e.g. show a success toast). */
+  onMitigationPlanUpdated?: () => void;
+  /** Called after an existing plan is deleted (e.g. show a success toast). */
+  onMitigationPlanDeleted?: () => void;
 };
 
 export default function MitigationPlanPageSideSheet({
   open,
   onClose,
   cyberRiskName,
-  relatedAssetNames,
+  editingPlanId = null,
+  assetOptions,
+  onMitigationPlanCreated,
+  onMitigationPlanUpdated,
+  onMitigationPlanDeleted,
 }: MitigationPlanPageSideSheetProps) {
   const { presets } = useTheme();
-  const { SideSheetPresets } = presets;
+  const { AutocompletePresets, SideSheetPresets } = presets;
   const { size, components } = SideSheetPresets;
   const { Header, Content } = components;
 
@@ -105,47 +182,227 @@ export default function MitigationPlanPageSideSheet({
   const [name, setName] = useState("");
   const [severity, setSeverity] = useState("");
   const [dueDate, setDueDate] = useState<Date | null>(null);
-  const [owners, setOwners] = useState("");
+  const [ownerIds, setOwnerIds] = useState<string[]>([]);
   const [orgUnit, setOrgUnit] = useState("");
-  const [relatedAssets, setRelatedAssets] = useState<string[]>([]);
+  const [relatedAssetIds, setRelatedAssetIds] = useState<string[]>([]);
   const [relatedControls, setRelatedControls] = useState<string[]>([]);
   const [actionPlan, setActionPlan] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  /** Primary related risk name when edit mode hydrated; used to preserve multi–cyber-risk links if unchanged. */
+  const initialPrimaryRiskNameRef = useRef("");
 
-  const riskAutocompleteOptions = useMemo(
-    () => buildRiskAutocompleteOptions(cyberRiskName),
-    [cyberRiskName],
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
   );
+
+  const riskAutocompleteOptions = useMemo(() => {
+    const names = cyberRisks.map((r) => r.name);
+    const extra = editingPlanId ? (selectedRisk ?? "") : cyberRiskName;
+    return buildRiskAutocompleteOptions(extra, names);
+  }, [cyberRiskName, editingPlanId, selectedRisk, catalogVersion]);
+
+  const userLookupOptions = useMemo((): UserLookupOption[] => {
+    return users.map((u) => ({
+      id: u.id,
+      label: u.fullName,
+      email: mockUserEmail(u),
+      type: "user" as const,
+    }));
+  }, [catalogVersion]);
+
+  const selectedOwners = useMemo((): UserLookupOption[] => {
+    return ownerIds
+      .map((id) => userLookupOptions.find((o) => o.id === id))
+      .filter((o): o is UserLookupOption => o != null);
+  }, [ownerIds, userLookupOptions]);
+
+  const assetLabelById = useMemo(() => {
+    return new Map(assetOptions.map((o) => [o.id, o.label] as const));
+  }, [assetOptions]);
+
+  const relatedControlsMenuOptions = useMemo(
+    () => buildRelatedControlsMenuOptions(relatedControls),
+    [relatedControls],
+  );
+
+  const isEditMode = Boolean(open && editingPlanId);
 
   useEffect(() => {
     if (!open) return;
+    if (editingPlanId) return;
     const trimmed = cyberRiskName.trim();
     setSelectedRisk(trimmed === "" ? null : trimmed);
-  }, [open, cyberRiskName]);
+  }, [open, cyberRiskName, editingPlanId]);
 
-  const handleClose = useCallback(() => {
+  useEffect(() => {
+    if (!open || !editingPlanId) return;
+    const plan = getMitigationPlanById(editingPlanId);
+    if (!plan) return;
+
+    setName(plan.name);
+    setSeverity(`${plan.severity} - ${plan.severityLabel}`);
+    const rawDue = plan.dueDate?.trim() ?? "";
+    if (rawDue && /^\d{4}-\d{2}-\d{2}/.test(rawDue)) {
+      const parsed = new Date(`${rawDue.slice(0, 10)}T12:00:00`);
+      setDueDate(Number.isNaN(parsed.getTime()) ? null : parsed);
+    } else {
+      setDueDate(null);
+    }
+    setOwnerIds(plan.ownerId ? [plan.ownerId] : []);
+    setOrgUnit(ORG_UNIT_BU_ID_TO_OPTION[plan.orgUnitId] ?? "");
+    setRelatedAssetIds(plan.assetIds?.length ? [...plan.assetIds] : []);
+    const controlLabels =
+      plan.relatedControlNames?.length && plan.relatedControlNames.some((s) => s.trim())
+        ? [...plan.relatedControlNames]
+        : plan.controlIds
+            .map((cid) => getControlById(cid)?.name)
+            .filter((n): n is string => Boolean(n?.trim()));
+    setRelatedControls(controlLabels);
+    setActionPlan(plan.actionPlan ?? "");
+
+    const primary = getCyberRiskById(plan.cyberRiskIds[0] ?? "");
+    initialPrimaryRiskNameRef.current = primary?.name ?? "";
+    setSelectedRisk(primary?.name ?? null);
+  }, [open, editingPlanId, catalogVersion]);
+
+  const resetLocalForm = useCallback(() => {
+    initialPrimaryRiskNameRef.current = "";
     setSelectedRisk(null);
     setName("");
     setSeverity("");
     setDueDate(null);
-    setOwners("");
+    setOwnerIds([]);
     setOrgUnit("");
-    setRelatedAssets([]);
+    setRelatedAssetIds([]);
     setRelatedControls([]);
     setActionPlan("");
+  }, []);
+
+  const handleClose = useCallback(() => {
+    resetLocalForm();
     onClose();
-  }, [onClose]);
+  }, [onClose, resetLocalForm]);
+
+  const resolvedRisk = useMemo(() => {
+    if (!selectedRisk?.trim()) return undefined;
+    return findCyberRiskByExactName(selectedRisk);
+  }, [selectedRisk, catalogVersion]);
+
+  const canSubmit = Boolean(name.trim() && resolvedRisk);
+
+  const handleAddMitigationPlan = useCallback(() => {
+    const trimmedName = name.trim();
+    if (!trimmedName || !resolvedRisk) return;
+
+    const { value: severityValue, label: severityLabel } = parseMitigationPlanSeverity(severity);
+    const orgUnitId =
+      orgUnit && ORG_UNIT_OPTION_TO_BU_ID[orgUnit] ? ORG_UNIT_OPTION_TO_BU_ID[orgUnit]! : DEFAULT_ORG_UNIT_ID;
+    const ownerId = ownerIds[0] ?? padId("USR", 7);
+    const dueDateIso = dueDate ? dueDate.toISOString().slice(0, 10) : "";
+
+    const plan = createMitigationPlan({
+      name: trimmedName,
+      cyberRiskIds: [resolvedRisk.id],
+      ownerId,
+      orgUnitId,
+      severity: severityValue,
+      severityLabel,
+      dueDate: dueDateIso,
+      assetIds: relatedAssetIds,
+      relatedControlNames: relatedControls,
+      actionPlan,
+    });
+    onMitigationPlanCreated?.(plan);
+    resetLocalForm();
+    onClose();
+  }, [
+    name,
+    resolvedRisk,
+    severity,
+    orgUnit,
+    ownerIds,
+    dueDate,
+    relatedAssetIds,
+    relatedControls,
+    actionPlan,
+    onMitigationPlanCreated,
+    resetLocalForm,
+    onClose,
+  ]);
+
+  const handleSaveChanges = useCallback(() => {
+    const trimmedName = name.trim();
+    if (!trimmedName || !resolvedRisk || !editingPlanId) return;
+
+    const plan = getMitigationPlanById(editingPlanId);
+    if (!plan) return;
+
+    const primaryAtOpen = initialPrimaryRiskNameRef.current.trim();
+    const selectedTrimmed = (selectedRisk ?? "").trim();
+    // Single-select related risk: keep all linked cyber risks if the user left the primary name unchanged; otherwise replace with the selected risk only.
+    const nextCyberRiskIds =
+      primaryAtOpen !== "" && selectedTrimmed === primaryAtOpen
+        ? [...plan.cyberRiskIds]
+        : [resolvedRisk.id];
+
+    const { value: severityValue, label: severityLabel } = parseMitigationPlanSeverity(severity);
+    const orgUnitId =
+      orgUnit && ORG_UNIT_OPTION_TO_BU_ID[orgUnit] ? ORG_UNIT_OPTION_TO_BU_ID[orgUnit]! : DEFAULT_ORG_UNIT_ID;
+    const ownerId = ownerIds[0] ?? padId("USR", 7);
+    const dueDateIso = dueDate ? dueDate.toISOString().slice(0, 10) : "";
+
+    updateMitigationPlan(editingPlanId, {
+      name: trimmedName,
+      cyberRiskIds: nextCyberRiskIds,
+      ownerId,
+      orgUnitId,
+      severity: severityValue,
+      severityLabel,
+      dueDate: dueDateIso,
+      assetIds: relatedAssetIds,
+      relatedControlNames: relatedControls,
+      actionPlan,
+    });
+    onMitigationPlanUpdated?.();
+    resetLocalForm();
+    onClose();
+  }, [
+    name,
+    resolvedRisk,
+    editingPlanId,
+    selectedRisk,
+    severity,
+    orgUnit,
+    ownerIds,
+    dueDate,
+    relatedAssetIds,
+    relatedControls,
+    actionPlan,
+    onMitigationPlanUpdated,
+    resetLocalForm,
+    onClose,
+  ]);
+
+  const handleDeleteMitigationPlan = useCallback(() => {
+    if (!editingPlanId) return;
+    deleteMitigationPlan(editingPlanId);
+    onMitigationPlanDeleted?.();
+    resetLocalForm();
+    onClose();
+  }, [editingPlanId, onMitigationPlanDeleted, resetLocalForm, onClose]);
 
   const handleRelatedAssetsChange = useCallback(
     (event: SelectChangeEvent<string[]>) => {
       const value = event.target.value;
-      setRelatedAssets(typeof value === "string" ? value.split(",") : value);
+      setRelatedAssetIds(typeof value === "string" ? value.split(",") : value);
     },
     [],
   );
 
-  const handleDeleteAsset = useCallback((assetToDelete: string) => {
-    setRelatedAssets((prev) => prev.filter((a) => a !== assetToDelete));
+  const handleDeleteAsset = useCallback((assetId: string) => {
+    setRelatedAssetIds((prev) => prev.filter((id) => id !== assetId));
   }, []);
 
   const handleDeleteControl = useCallback(
@@ -179,7 +436,7 @@ export default function MitigationPlanPageSideSheet({
       <Header
         variant="default"
         onClose={handleClose}
-        title="Add mitigation plan"
+        title={isEditMode ? "Edit mitigation plan" : "Add mitigation plan"}
         componentProps={{
           closeButton: { "aria-label": "Close side sheet" },
           title: { component: "h2", id: "mitigation-page-side-sheet-title" },
@@ -201,13 +458,14 @@ export default function MitigationPlanPageSideSheet({
 
           {/* Row 1: Name */}
           <FormControl fullWidth>
+            <FormLabel htmlFor="mp-name">Name</FormLabel>
             <TextField
+              id="mp-name"
               placeholder="Enter issue name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               slotProps={{
                 input: {
-                  id: "mp-name",
                   "aria-label": "Name",
                 },
               }}
@@ -254,13 +512,30 @@ export default function MitigationPlanPageSideSheet({
           </Stack>
 
           {/* Row 3: Owner(s) */}
-          <FormControl fullWidth>
+          <FormControl fullWidth margin="none">
             <FormLabel htmlFor="mp-owners">Owner(s)</FormLabel>
-            <TextField
-              placeholder="Search for owners"
-              value={owners}
-              onChange={(e) => setOwners(e.target.value)}
-              slotProps={{ input: { id: "mp-owners" } }}
+            <Autocomplete
+              multiple
+              id="mp-owners-lookup"
+              options={userLookupOptions as never}
+              value={selectedOwners as never}
+              onChange={(_, newValue) =>
+                setOwnerIds((newValue as UserLookupOption[]).map((o) => o.id))
+              }
+              getOptionLabel={(option) => (option as UserLookupOption).label}
+              isOptionEqualToValue={(a, b) =>
+                (a as UserLookupOption).id === (b as UserLookupOption).id
+              }
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  placeholder="Select users..."
+                  margin="none"
+                  inputProps={{ ...params.inputProps, id: "mp-owners" }}
+                />
+              )}
+              renderOption={AutocompletePresets.userLookup.renderOption}
+              renderTags={AutocompletePresets.userLookup.type.multiple.renderTags}
             />
           </FormControl>
 
@@ -291,17 +566,17 @@ export default function MitigationPlanPageSideSheet({
             <Select
               multiple
               displayEmpty
-              value={relatedAssets}
+              value={relatedAssetIds}
               onChange={handleRelatedAssetsChange}
               labelId="mp-related-assets-label"
               IconComponent={ExpandDownIcon}
               endAdornment={
-                relatedAssets.length > 0 ? (
+                relatedAssetIds.length > 0 ? (
                   <IconButton
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setRelatedAssets([]);
+                      setRelatedAssetIds([]);
                     }}
                     aria-label="Clear all selected assets"
                     sx={{ mr: 2 }}
@@ -311,18 +586,19 @@ export default function MitigationPlanPageSideSheet({
                 ) : null
               }
               renderValue={(selected) => {
-                if (selected.length === 0) {
+                const ids = selected as string[];
+                if (ids.length === 0) {
                   return <PlaceholderText text="Choose assets" />;
                 }
                 return (
                   <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {selected.map((value) => (
+                    {ids.map((id) => (
                       <Chip
-                        key={value}
-                        label={value}
+                        key={id}
+                        label={assetLabelById.get(id) ?? id}
                         variant="outlined"
                         size="small"
-                        onDelete={() => handleDeleteAsset(value)}
+                        onDelete={() => handleDeleteAsset(id)}
                         onMouseDown={(e) => e.stopPropagation()}
                       />
                     ))}
@@ -342,10 +618,10 @@ export default function MitigationPlanPageSideSheet({
                 },
               }}
             >
-              {relatedAssetNames.map((opt) => (
-                <MenuItem key={opt} value={opt}>
-                  <Checkbox checked={relatedAssets.includes(opt)} />
-                  <ListItemText primary={opt} />
+              {assetOptions.map((opt) => (
+                <MenuItem key={opt.id} value={opt.id}>
+                  <Checkbox checked={relatedAssetIds.includes(opt.id)} />
+                  <ListItemText primary={opt.label} />
                 </MenuItem>
               ))}
             </Select>
@@ -408,7 +684,7 @@ export default function MitigationPlanPageSideSheet({
                 },
               }}
             >
-              {RELATED_CONTROLS_OPTIONS.map((opt) => (
+              {relatedControlsMenuOptions.map((opt) => (
                 <MenuItem key={opt} value={opt}>
                   <Checkbox checked={relatedControls.includes(opt)} />
                   <ListItemText primary={opt} />
@@ -504,15 +780,29 @@ export default function MitigationPlanPageSideSheet({
 
       <Footer
         horizontalPadding="medium"
-        secondaryAction={<span />}
+        secondaryAction={
+          isEditMode ? (
+            <Button
+              variant="text"
+              onClick={handleDeleteMitigationPlan}
+              sx={(theme) => ({ color: theme.palette.error.main })}
+            >
+              Delete
+            </Button>
+          ) : undefined
+        }
         tertiaryAction={
           <Button variant="text" onClick={handleClose}>
             Discard
           </Button>
         }
         primaryAction={
-          <Button variant="contained" onClick={handleClose}>
-            Add mitigation plan
+          <Button
+            variant="contained"
+            disabled={!canSubmit}
+            onClick={isEditMode ? handleSaveChanges : handleAddMitigationPlan}
+          >
+            {isEditMode ? "Save changes" : "Add mitigation plan"}
           </Button>
         }
       />

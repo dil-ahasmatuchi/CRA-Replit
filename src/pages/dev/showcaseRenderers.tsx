@@ -458,7 +458,7 @@ export function renderShowcaseComponent(slug: string): ReactNode {
           open
           onClose={() => {}}
           cyberRiskName={risk0?.name ?? "Sample risk"}
-          relatedAssetNames={[]}
+          assetOptions={[]}
         />
       );
     case "mitigation-plan-status-chip":

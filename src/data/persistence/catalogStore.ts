@@ -43,6 +43,11 @@ function notifyCatalogListeners(): void {
   for (const cb of catalogListeners) cb();
 }
 
+/** Bump catalog version so subscribers re-read in-memory catalogs before debounced persist finishes. */
+export function touchCatalogForImmediateUiRefresh(): void {
+  notifyCatalogListeners();
+}
+
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 let dirty = false;
 

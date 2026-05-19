@@ -1,8 +1,14 @@
+import {
+  linkMitigationPlanToCyberRisks,
+  unlinkMitigationPlanFromCyberRisks,
+} from "./cyberRisks.js";
+import { markCatalogDirty, touchCatalogForImmediateUiRefresh } from "./persistence/catalogStore.js";
 import { padId, getFivePointLabel } from "./types.js";
 import type {
   MockMitigationPlan,
   MitigationPlanStatus,
   FivePointScaleValue,
+  FivePointScaleLabel,
 } from "./types.js";
 
 type PlanRow = [
@@ -49,10 +55,21 @@ export const mitigationPlans: MockMitigationPlan[] = raw.map(
     controlIds: ctlIdxs.map((n) => padId("CTL", n)),
     cyberRiskIds: crIdxs.map((n) => padId("CR", n)),
     assessmentIds: craIdxs.map((n) => padId("CRA", n)),
+    createdAt: new Date(Date.UTC(2025, 0, 1 + i)).toISOString(),
   }),
 );
 
+const MP_ID_RE = /^MP-0*(\d+)$/i;
+
 const planById = new Map(mitigationPlans.map((p) => [p.id, p]));
+
+function backfillPlanCreatedAtIfMissing(p: MockMitigationPlan): void {
+  const rawIso = p.createdAt?.trim();
+  if (rawIso && !Number.isNaN(Date.parse(rawIso))) return;
+  const m = MP_ID_RE.exec(p.id);
+  const seq = m ? parseInt(m[1]!, 10) : 1;
+  p.createdAt = new Date(Date.UTC(2024, 0, seq)).toISOString();
+}
 
 function rebuildPlanIndex(): void {
   planById.clear();
@@ -64,9 +81,131 @@ function rebuildPlanIndex(): void {
 export function replaceMitigationPlansFromPersistence(next: MockMitigationPlan[]): void {
   mitigationPlans.length = 0;
   mitigationPlans.push(...next);
+  for (const p of mitigationPlans) {
+    backfillPlanCreatedAtIfMissing(p);
+  }
   rebuildPlanIndex();
 }
 
 export function getMitigationPlanById(id: string): MockMitigationPlan | undefined {
   return planById.get(id);
+}
+
+/** Sort key for “newest first”; uses `createdAt` when valid, else MP sequence from id. */
+export function mitigationPlanSortTimeMs(p: MockMitigationPlan): number {
+  const raw = p.createdAt?.trim();
+  if (raw) {
+    const t = Date.parse(raw);
+    if (!Number.isNaN(t)) return t;
+  }
+  const m = MP_ID_RE.exec(p.id);
+  return m ? parseInt(m[1]!, 10) : 0;
+}
+
+function nextMitigationPlanSequence(): number {
+  let max = 0;
+  for (const p of mitigationPlans) {
+    const m = MP_ID_RE.exec(p.id);
+    if (m) max = Math.max(max, parseInt(m[1]!, 10));
+  }
+  return max + 1;
+}
+
+export type CreateMitigationPlanInput = {
+  name: string;
+  cyberRiskIds: readonly string[];
+  ownerId: string;
+  orgUnitId: string;
+  severity: FivePointScaleValue;
+  severityLabel: FivePointScaleLabel;
+  dueDate: string;
+  assetIds: readonly string[];
+  relatedControlNames: readonly string[];
+  actionPlan: string;
+  assessmentIds?: readonly string[];
+};
+
+export function createMitigationPlan(input: CreateMitigationPlanInput): MockMitigationPlan {
+  const id = padId("MP", nextMitigationPlanSequence());
+  const trimmedName = input.name.trim();
+  const trimmedAction = input.actionPlan.trim();
+  const plan: MockMitigationPlan = {
+    id,
+    name: trimmedName,
+    ownerId: input.ownerId,
+    status: "In progress",
+    dueDate: input.dueDate,
+    orgUnitId: input.orgUnitId,
+    severity: input.severity,
+    severityLabel: input.severityLabel,
+    controlIds: [],
+    cyberRiskIds: [...input.cyberRiskIds],
+    createdAt: new Date().toISOString(),
+    assessmentIds: input.assessmentIds?.length ? [...input.assessmentIds] : [],
+    assetIds: input.assetIds.length > 0 ? [...input.assetIds] : undefined,
+    actionPlan: trimmedAction ? trimmedAction : undefined,
+    relatedControlNames:
+      input.relatedControlNames.length > 0 ? [...input.relatedControlNames] : undefined,
+  };
+  mitigationPlans.push(plan);
+  planById.set(plan.id, plan);
+  linkMitigationPlanToCyberRisks(plan.id, plan.cyberRiskIds);
+  touchCatalogForImmediateUiRefresh();
+  markCatalogDirty();
+  return plan;
+}
+
+export type UpdateMitigationPlanInput = {
+  name: string;
+  cyberRiskIds: readonly string[];
+  ownerId: string;
+  orgUnitId: string;
+  severity: FivePointScaleValue;
+  severityLabel: FivePointScaleLabel;
+  dueDate: string;
+  assetIds: readonly string[];
+  relatedControlNames: readonly string[];
+  actionPlan: string;
+};
+
+export function updateMitigationPlan(planId: string, input: UpdateMitigationPlanInput): void {
+  const plan = planById.get(planId);
+  if (!plan) return;
+
+  const prevCyberRiskIds = [...plan.cyberRiskIds];
+  unlinkMitigationPlanFromCyberRisks(planId, prevCyberRiskIds);
+
+  const trimmedName = input.name.trim();
+  const trimmedAction = input.actionPlan.trim();
+  const nextCyberRiskIds = [...new Set(input.cyberRiskIds)];
+
+  plan.name = trimmedName;
+  plan.ownerId = input.ownerId;
+  plan.orgUnitId = input.orgUnitId;
+  plan.severity = input.severity;
+  plan.severityLabel = input.severityLabel;
+  plan.dueDate = input.dueDate;
+  plan.cyberRiskIds = nextCyberRiskIds;
+  plan.assetIds = input.assetIds.length > 0 ? [...input.assetIds] : undefined;
+  plan.relatedControlNames =
+    input.relatedControlNames.length > 0 ? [...input.relatedControlNames] : undefined;
+  plan.actionPlan = trimmedAction ? trimmedAction : undefined;
+
+  linkMitigationPlanToCyberRisks(planId, plan.cyberRiskIds);
+  touchCatalogForImmediateUiRefresh();
+  markCatalogDirty();
+}
+
+export function deleteMitigationPlan(planId: string): void {
+  const plan = planById.get(planId);
+  if (!plan) return;
+
+  unlinkMitigationPlanFromCyberRisks(planId, plan.cyberRiskIds);
+
+  const idx = mitigationPlans.findIndex((p) => p.id === planId);
+  if (idx !== -1) mitigationPlans.splice(idx, 1);
+  planById.delete(planId);
+
+  touchCatalogForImmediateUiRefresh();
+  markCatalogDirty();
 }
