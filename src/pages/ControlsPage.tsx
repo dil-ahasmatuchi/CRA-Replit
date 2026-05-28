@@ -8,7 +8,6 @@ import {
   Button,
   Container,
   InputAdornment,
-  Link,
   Stack,
   TextField,
   Typography,
@@ -24,6 +23,7 @@ import {
   QuickFilterControl,
   Toolbar,
 } from "@mui/x-data-grid-pro";
+import { useMemo, useSyncExternalStore } from "react";
 import { NavLink } from "react-router";
 
 import SearchIcon from "@diligentcorp/atlas-react-bundle/icons/Search";
@@ -31,15 +31,26 @@ import FilterIcon from "@diligentcorp/atlas-react-bundle/icons/Filter";
 import ColumnsIcon from "@diligentcorp/atlas-react-bundle/icons/Columns";
 import AvatarIcon from "@diligentcorp/atlas-react-bundle/icons/Avatar";
 
+import { getAssetById } from "../data/assets.js";
+import { controls } from "../data/controls.js";
+import { cyberRisks } from "../data/cyberRisks.js";
+import { getOrgUnitById } from "../data/orgUnits.js";
+import {
+  getCatalogSnapshotVersion,
+  subscribeCatalog,
+} from "../data/persistence/catalogStore.js";
+import type { ControlStatus } from "../data/types.js";
+import { getUserById } from "../data/users.js";
+
 // ---------------------------------------------------------------------------
 // Data model
 // ---------------------------------------------------------------------------
 
 interface ControlRow {
-  id: number;
+  id: string;
   controlId: string;
   name: string;
-  status: "Active" | "Archived" | "Draft";
+  status: ControlStatus;
   preventDetect: string;
   linkedOrgUnits: string;
   ownerName: string;
@@ -52,160 +63,83 @@ interface ControlRow {
 
 const AVATAR_COLORS = ["red", "blue", "green", "purple", "yellow"] as const;
 
-const controlRows: ControlRow[] = [
-  {
-    id: 1,
-    controlId: "C-123456",
-    name: "Role-based access",
-    status: "Active",
-    preventDetect: "Detective",
-    linkedOrgUnits: "Human Resources \u2013 San Francisco",
-    ownerName: "Cody Fisher",
-    ownerInitials: "CF",
-    assets: 12,
-    cyberRisks: 3,
-    keyControl: "Yes",
-    controlFrequency: "As needed",
-  },
-  {
-    id: 2,
-    controlId: "C-123456",
-    name: "Communication protocols",
-    status: "Archived",
-    preventDetect: "Preventive",
-    linkedOrgUnits: "2",
-    ownerName: "Jacob Jones",
-    ownerInitials: "JJ",
-    assets: 8,
-    cyberRisks: 5,
-    keyControl: "No",
-    controlFrequency: "Annually",
-  },
-  {
-    id: 3,
-    controlId: "C-123456",
-    name: "Performance metrics",
-    status: "Active",
-    preventDetect: "Detective",
-    linkedOrgUnits: "4",
-    ownerName: "Ralph Edwards",
-    ownerInitials: "RE",
-    assets: 24,
-    cyberRisks: 7,
-    keyControl: "Yes",
-    controlFrequency: "Quarterly",
-  },
-  {
-    id: 4,
-    controlId: "C-123456",
-    name: "Business continuity plans",
-    status: "Draft",
-    preventDetect: "Preventive",
-    linkedOrgUnits: "17",
-    ownerName: "Alexander Konstantinop\u2026",
-    ownerInitials: "AK",
-    assets: 15,
-    cyberRisks: 2,
-    keyControl: "Yes",
-    controlFrequency: "Monthly",
-  },
-  {
-    id: 5,
-    controlId: "C-123456",
-    name: "Vendor Risk Management",
-    status: "Draft",
-    preventDetect: "-",
-    linkedOrgUnits: "Finance \u2013 Melbourne",
-    ownerName: "Unassigned",
-    ownerInitials: "",
-    assets: 6,
-    cyberRisks: 1,
-    keyControl: "No",
-    controlFrequency: "Semi-annually",
-  },
-  {
-    id: 6,
-    controlId: "C-123456",
-    name: "Data Loss Prevention",
-    status: "Active",
-    preventDetect: "Preventive",
-    linkedOrgUnits: "2",
-    ownerName: "Nathaniel Ribbon",
-    ownerInitials: "NR",
-    assets: 19,
-    cyberRisks: 4,
-    keyControl: "No",
-    controlFrequency: "Daily",
-  },
-  {
-    id: 7,
-    controlId: "C-123456",
-    name: "Network Security Monitoring",
-    status: "Active",
-    preventDetect: "Detective",
-    linkedOrgUnits: "7",
-    ownerName: "Gavin Belson",
-    ownerInitials: "GB",
-    assets: 31,
-    cyberRisks: 9,
-    keyControl: "Yes",
-    controlFrequency: "Bi-weekly",
-  },
-  {
-    id: 8,
-    controlId: "C-123456",
-    name: "Physical Security Controls",
-    status: "Archived",
-    preventDetect: "Preventive",
-    linkedOrgUnits: "24",
-    ownerName: "Derek Donner",
-    ownerInitials: "DD",
-    assets: 10,
-    cyberRisks: 6,
-    keyControl: "No",
-    controlFrequency: "Continuously",
-  },
-  {
-    id: 9,
-    controlId: "C-123456",
-    name: "Third-Party Risk Assessment",
-    status: "Active",
-    preventDetect: "Detective",
-    linkedOrgUnits: "3",
-    ownerName: "Sarah Mitchell",
-    ownerInitials: "SM",
-    assets: 14,
-    cyberRisks: 3,
-    keyControl: "Yes",
-    controlFrequency: "Annually",
-  },
-  {
-    id: 10,
-    controlId: "C-123456",
-    name: "Business Impact Analysis",
-    status: "Draft",
-    preventDetect: "Preventive",
-    linkedOrgUnits: "Finance \u2013 New York",
-    ownerName: "Tom Bradley",
-    ownerInitials: "TB",
-    assets: 7,
-    cyberRisks: 2,
-    keyControl: "No",
-    controlFrequency: "Quarterly",
-  },
-];
+/** Union of control ids attached to an asset (top-level and relationships). */
+function controlIdsOnAsset(assetId: string): Set<string> {
+  const out = new Set<string>();
+  const a = getAssetById(assetId);
+  if (!a) return out;
+  for (const cid of a.controlIds ?? []) out.add(cid);
+  for (const cid of a.relationships.controlIds ?? []) out.add(cid);
+  return out;
+}
+
+/** For each cyber risk, count distinct controls on its linked assets; aggregate per control id. */
+function buildCyberRiskCountByControlId(): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const risk of cyberRisks) {
+    const onRisk = new Set<string>();
+    for (const aid of risk.assetIds ?? []) {
+      for (const cid of controlIdsOnAsset(aid)) onRisk.add(cid);
+    }
+    for (const cid of onRisk) {
+      counts.set(cid, (counts.get(cid) ?? 0) + 1);
+    }
+  }
+  return counts;
+}
+
+function linkedOrgUnitsLabel(assetIds: readonly string[]): string {
+  const names: string[] = [];
+  const seen = new Set<string>();
+  for (const aid of assetIds) {
+    const a = getAssetById(aid);
+    if (!a) continue;
+    const ou = getOrgUnitById(a.orgUnitId);
+    const label = (ou?.name ?? a.orgUnitId).trim();
+    if (label && !seen.has(label)) {
+      seen.add(label);
+      names.push(label);
+    }
+  }
+  if (names.length === 0) return "—";
+  if (names.length === 1) return names[0]!;
+  return `${names[0]!} (+${names.length - 1})`;
+}
+
+function buildControlGridRows(): ControlRow[] {
+  const riskCounts = buildCyberRiskCountByControlId();
+  return [...controls]
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
+    .map((c) => {
+      const owner = getUserById(c.ownerId);
+      return {
+        id: c.id,
+        controlId: c.id,
+        name: c.name,
+        status: c.status,
+        preventDetect: c.controlType,
+        linkedOrgUnits: linkedOrgUnitsLabel(c.assetIds ?? []),
+        ownerName: owner?.fullName ?? "Unknown",
+        ownerInitials: owner?.initials ?? "",
+        assets: c.assetIds?.length ?? 0,
+        cyberRisks: riskCounts.get(c.id) ?? 0,
+        keyControl: c.keyControl ? "Yes" : "No",
+        controlFrequency: c.controlFrequency,
+      };
+    });
+}
 
 // ---------------------------------------------------------------------------
 // Custom cell renderers
 // ---------------------------------------------------------------------------
 
-const STATUS_COLOR_MAP: Record<ControlRow["status"], "success" | "generic" | "subtle"> = {
+const STATUS_COLOR_MAP: Record<ControlStatus, "success" | "generic" | "subtle"> = {
   Active: "success",
   Archived: "generic",
   Draft: "subtle",
 };
 
-function StatusCell({ value }: { value: ControlRow["status"] }) {
+function StatusCell({ value }: { value: ControlStatus }) {
   const { presets } = useTheme();
   const StatusIndicator =
     presets.StatusIndicatorPresets?.components.StatusIndicator;
@@ -216,7 +150,7 @@ function StatusCell({ value }: { value: ControlRow["status"] }) {
 function OwnerCell({ name, initials }: { name: string; initials: string }) {
   const { presets } = useTheme();
   const { getAvatarProps } = presets.AvatarPresets;
-  const isUnassigned = name === "Unassigned";
+  const showPlaceholderAvatar = name === "Unassigned" || name === "Unknown";
   const colorIndex = initials
     ? initials.charCodeAt(0) % AVATAR_COLORS.length
     : 0;
@@ -231,7 +165,7 @@ function OwnerCell({ name, initials }: { name: string; initials: string }) {
         aria-label={name}
         role="img"
       >
-        {isUnassigned ? <AvatarIcon aria-hidden /> : initials}
+        {showPlaceholderAvatar ? <AvatarIcon aria-hidden /> : initials}
       </Avatar>
       <Typography variant="textMd">{name}</Typography>
     </Stack>
@@ -239,16 +173,10 @@ function OwnerCell({ name, initials }: { name: string; initials: string }) {
 }
 
 function LinkedOrgUnitsCell({ value }: { value: string }) {
-  const isNumeric = /^\d+$/.test(value);
-
-  if (isNumeric) {
-    return <Typography variant="textMd">{value}</Typography>;
-  }
-
   return (
-    <Link href="#" underline="hover" sx={{ cursor: "pointer" }}>
+    <Typography variant="textMd" sx={{ whiteSpace: "normal" }}>
       {value}
-    </Link>
+    </Typography>
   );
 }
 
@@ -307,6 +235,17 @@ function CustomToolbar() {
 // ---------------------------------------------------------------------------
 
 function ControlsDataGrid() {
+  const catalogVersion = useSyncExternalStore(
+    subscribeCatalog,
+    getCatalogSnapshotVersion,
+    () => 0,
+  );
+
+  const rows = useMemo(
+    () => buildControlGridRows(),
+    [catalogVersion, controls.length],
+  );
+
   const columns: GridColDef<ControlRow>[] = [
     {
       field: "controlId",
@@ -319,9 +258,9 @@ function ControlsDataGrid() {
       flex: 1,
       minWidth: 200,
       renderCell: (params: GridRenderCellParams<ControlRow>) => (
-        <Link href="#" underline="hover" sx={{ cursor: "pointer" }}>
-          {params.value}
-        </Link>
+        <Typography component="span" variant="textMd" sx={{ whiteSpace: "normal" }}>
+          {params.value as string}
+        </Typography>
       ),
     },
     {
@@ -329,7 +268,7 @@ function ControlsDataGrid() {
       headerName: "Status",
       width: 120,
       renderCell: (params: GridRenderCellParams<ControlRow>) => (
-        <StatusCell value={params.value as ControlRow["status"]} />
+        <StatusCell value={params.value as ControlStatus} />
       ),
     },
     {
@@ -383,8 +322,9 @@ function ControlsDataGrid() {
   return (
     <Box sx={{ width: "100%" }}>
       <DataGridPro
-        rows={controlRows}
+        rows={rows}
         columns={columns}
+        getRowId={(row) => row.id}
         pagination
         pageSizeOptions={[10, 25, 50]}
         initialState={{

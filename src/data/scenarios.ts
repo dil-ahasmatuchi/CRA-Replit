@@ -11,6 +11,22 @@ import { assets } from "./assets.js";
 import { markCatalogDirty } from "./persistence/catalogStore.js";
 import { threats as allThreats } from "./threats.js";
 import { vulnerabilities as allVulnerabilities } from "./vulnerabilities.js";
+import {
+  generateScenarioConfidencePercent,
+  isValidConfidencePercent,
+} from "../utils/scenarioConfidence.js";
+
+/** Assign stable confidence when missing from persisted or legacy catalog rows. */
+export function ensureScenarioConfidenceOnRow(s: MockScenario): void {
+  if (isValidConfidencePercent(s.confidencePercent)) return;
+  s.confidencePercent = generateScenarioConfidencePercent(s.id);
+}
+
+function ensureScenarioConfidenceOnRows(rows: MockScenario[]): void {
+  for (const s of rows) {
+    ensureScenarioConfidenceOnRow(s);
+  }
+}
 
 /**
  * One scenario per (cyber risk × threat × asset row) for threats in that risk.
@@ -120,6 +136,7 @@ export function buildScenarioFromGraph(args: BuildScenarioFromGraphArgs): MockSc
     likelihoodLabel,
     cyberRiskScore,
     cyberRiskScoreLabel,
+    confidencePercent: generateScenarioConfidencePercent(id),
     threatIds: scenarioThreatIds,
     vulnerabilityIds: scenarioVulnIds,
     scoringRationale: buildScoringRationale(
@@ -278,6 +295,7 @@ export function applyScenariosGraphRelinks(): void {
   applyScenarioEntityLinks(scenarios);
   rebuildScenarioIndex();
   applyScenarioOverridesToRows();
+  ensureScenarioConfidenceOnRows(scenarios);
   markCatalogDirty();
 }
 
@@ -288,6 +306,7 @@ export function getScenariosForPersistence(): MockScenario[] {
 
 /** Replace library scenarios (e.g. Pooja migration) and re-link cyber risks / threats / vulns / assets. */
 export function replaceScenariosFromPersistence(next: MockScenario[]): void {
+  ensureScenarioConfidenceOnRows(next);
   scenarios.length = 0;
   scenarios.push(...next);
   applyScenariosGraphRelinks();
@@ -296,6 +315,7 @@ export function replaceScenariosFromPersistence(next: MockScenario[]): void {
 /** Rebuild scenario rows from current cyber risks / threats / assets, then re-apply persisted overrides. */
 export function rebuildScenariosFromGraph(): void {
   const next = buildScenarios();
+  ensureScenarioConfidenceOnRows(next);
   scenarios.length = 0;
   scenarios.push(...next);
   applyScenariosGraphRelinks();

@@ -365,6 +365,17 @@ export interface MockCyberRisk {
   residualLikelihoodLabel: FivePointScaleLabel;
   residualCyberRiskScore: number;
   residualCyberRiskScoreLabel: FivePointScaleLabel;
+  /**
+   * When residual max impact from assessment scenarios differs from {@link impact}, the residual
+   * likelihood × impact matrix uses this for the impact axis. Omitted means residual uses {@link impact}.
+   */
+  residualImpact?: FivePointScaleValue;
+  residualImpactLabel?: FivePointScaleLabel;
+  /**
+   * When true, residual likelihood/score (and optional residual impact) came from an approved
+   * residual-mode assessment; catalog hydration must not overwrite them with the control formula.
+   */
+  residualScoresFromAssessment?: boolean;
   assetIds: string[];
   threatIds: string[];
   vulnerabilityIds: string[];
@@ -400,6 +411,8 @@ export interface MockScenario {
   likelihoodLabel: FivePointScaleLabel;
   cyberRiskScore: number;
   cyberRiskScoreLabel: FivePointScaleLabel;
+  /** AI scoring confidence for this scenario (1–100). Shown in scoring table and scenario detail. */
+  confidencePercent: number;
   threatIds: string[];
   vulnerabilityIds: string[];
   scoringRationale: string;
@@ -428,6 +441,8 @@ export interface MockCyberRiskAssessment {
   excludedScopeScenarioIds?: string[];
   /** Catalog-backed CRA: persisted AI scoring run state (prototype session store). */
   aiScoringPhase?: AiScoringPhase;
+  /** Optional long-form assessment brief (persisted in catalog v3). */
+  instructions?: string;
 }
 
 export interface MockMitigationPlan {

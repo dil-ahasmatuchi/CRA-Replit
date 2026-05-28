@@ -151,7 +151,7 @@ export const SHOWCASE_USAGES: Record<string, ShowcaseUsage> = {
     usedInPages: [{ label: "Assessment results tab", path: "/cyber-risk/cyber-risk-assessments/new" }],
     usedInComponents: [],
   },
-  "results-tree-data": {
+  "results-table": {
     usedInPages: [{ label: "Assessment results tab", path: "/cyber-risk/cyber-risk-assessments/new" }],
     usedInComponents: [],
   },
@@ -275,6 +275,10 @@ export const SHOWCASE_USAGES: Record<string, ShowcaseUsage> = {
   "scoring-scale-wide": {
     usedInPages: [{ label: "Scoring rationale", path: "/cyber-risk/cyber-risk-assessments/new/scenario/SCE-001" }],
     usedInComponents: ["ScoringWide", "ScoringScaleInfo"],
+  },
+  "scoring-table": {
+    usedInPages: [{ label: "Assessment scoring tab", path: "/cyber-risk/cyber-risk-assessments/new" }],
+    usedInComponents: [],
   },
   "scoring-wide": {
     usedInPages: [{ label: "Scoring rationale", path: "/cyber-risk/cyber-risk-assessments/new/scenario/SCE-001" }],

@@ -567,8 +567,8 @@
       "name": "Customer Database Server",
       "ownerId": "USR-001",
       "assetType": "Application",
-      "criticality": 2,
-      "criticalityLabel": "Low",
+      "criticality": 4,
+      "criticalityLabel": "High",
       "orgUnitId": "BU-001",
       "status": "Inactive",
       "vulnerabilityIds": [],
@@ -887,8 +887,8 @@
       "name": "Code Repository",
       "ownerId": "USR-017",
       "assetType": "Server",
-      "criticality": 2,
-      "criticalityLabel": "Low",
+      "criticality": 5,
+      "criticalityLabel": "Very high",
       "orgUnitId": "BU-017",
       "status": "Active",
       "vulnerabilityIds": [],
@@ -3801,7 +3801,8 @@
         "AST-138",
         "AST-141",
         "AST-145",
-        "AST-148"
+        "AST-148",
+        "AST-002"
       ],
       "threatIds": [],
       "relationships": {
@@ -4299,7 +4300,9 @@
         "AST-144",
         "AST-146",
         "AST-147",
-        "AST-150"
+        "AST-150",
+        "AST-001",
+        "AST-002"
       ],
       "threatIds": [],
       "relationships": {
@@ -4526,7 +4529,8 @@
         "AST-144",
         "AST-146",
         "AST-147",
-        "AST-150"
+        "AST-150",
+        "AST-001"
       ],
       "threatIds": [],
       "relationships": {
@@ -8240,19 +8244,21 @@
     {
       "id": "THR-020",
       "displayId": "T-0020",
-      "name": "AI-assisted social engineering at scale",
+      "name": "AI-Assisted Social Engineering at Scale",
       "domain": "People & Workforce",
-      "description": "AI-assisted social engineering at scale",
+      "description": "Attackers use generative AI, deepfakes, and automated translation to craft highly convincing phishing, smishing, and callback scripts at volume across email, chat, and social channels. Well-meaning employees may also paste sensitive context into unsecured AI assistants or browser extensions, creating accidental data exposure. This category spans deliberate campaigns and negligent misuse that bypass traditional awareness cues.",
       "sources": [
-        "Deliberate"
+        "Deliberate",
+        "Accidental"
       ],
       "threatActors": [
-        "Malicious Insider (employee, contractor)"
+        "Organised Cybercriminal Group",
+        "Negligent / Untrained Employee"
       ],
       "attackVectors": [
         "Email & Messaging (phishing, BEC, malicious attachments)",
         "Social Media & Public Channels",
-        "Email & Messaging"
+        "Web Application & Browser"
       ],
       "status": "Active",
       "ownerIds": [
@@ -10688,19 +10694,19 @@
     {
       "id": "THR-050",
       "displayId": "T-0050",
-      "name": "Adversary-in-the-middle on unmanaged guest and public networks",
+      "name": "Adversary-in-the-Middle (AitM)",
       "domain": "Network & Infrastructure",
-      "description": "Adversary-in-the-middle on unmanaged guest and public networks",
+      "description": "An adversary inserts themselves on the communications path between users and legitimate services, often on untrusted Wi‑Fi, captive portals, or compromised upstream proxies. They harvest credentials, session cookies, or MFA codes through rogue access points, DNS or TLS redirection, downgrade attacks, or split-tunnel paths that bridge untrusted and trusted zones. High-risk contexts include guest networks, public hotspots, shared conferencing links, and remote access that crosses trust boundaries.",
       "sources": [
         "Deliberate"
       ],
       "threatActors": [
-        "Malicious Insider (employee, contractor)"
+        "Organised Cybercriminal Group",
+        "Nation-State / State-Sponsored Actor"
       ],
       "attackVectors": [
         "Network & Remote Access (VPN, RDP, open ports)",
-        "Wireless & Mobile (Wi-Fi, Bluetooth, SMS)",
-        "Email & Messaging"
+        "Wireless & Mobile (Wi-Fi, Bluetooth, SMS)"
       ],
       "status": "Active",
       "ownerIds": [
@@ -11261,7 +11267,8 @@
         "AST-008",
         "AST-015",
         "AST-022",
-        "AST-029"
+        "AST-029",
+        "AST-002"
       ],
       "effectiveness": 5,
       "effectivenessLabel": "Very high"
@@ -11877,6 +11884,35 @@
       ],
       "effectiveness": 4,
       "effectivenessLabel": "High"
+    },
+    {
+      "id": "CTL-EDR",
+      "name": "Endpoint Detection & Response",
+      "ownerId": "USR-001",
+      "status": "Active",
+      "controlType": "Detective",
+      "keyControl": true,
+      "controlFrequency": "Daily",
+      "assetIds": [
+        "AST-017"
+      ],
+      "effectiveness": 5,
+      "effectivenessLabel": "Very high"
+    },
+    {
+      "id": "CTL-SAT",
+      "name": "Security Awareness & Anti-Phishing Training",
+      "ownerId": "USR-001",
+      "status": "Active",
+      "controlType": "Preventive",
+      "keyControl": true,
+      "controlFrequency": "Monthly",
+      "assetIds": [
+        "AST-001",
+        "AST-002"
+      ],
+      "effectiveness": 5,
+      "effectivenessLabel": "Very high"
     }
   ],
   "mitigationPlans": [
@@ -12224,6 +12260,58 @@
         "CRA-002",
         "CRA-003"
       ]
+    },
+    {
+      "id": "MP-029",
+      "name": "Phishing-Resistant MFA Rollout",
+      "ownerId": "USR-001",
+      "status": "Completed",
+      "dueDate": "2026-03-15",
+      "orgUnitId": "BU-050",
+      "severity": 4,
+      "severityLabel": "High",
+      "controlIds": [
+        "CTL-001"
+      ],
+      "cyberRiskIds": [
+        "CR-001"
+      ],
+      "assessmentIds": [
+        "CRA-029",
+        "CRA-030"
+      ],
+      "assetIds": [
+        "AST-001",
+        "AST-002"
+      ],
+      "actionPlan": "Inventory all privileged accounts across AD, Code Repository, and Customer DB (including service accounts and break-glass accounts).\nProcure and distribute FIDO2 security keys (primary) and enroll passkeys (secondary) for all privileged users.\nConfigure conditional access policies in the identity provider to require phishing-resistant MFA for admin, developer, and database access roles.\nPilot with the IT admin group for 2 weeks; capture friction points and support load.\nRoll out to all privileged users in waves by business unit; deprecate SMS and TOTP for these accounts.\nImplement break-glass account procedures with hardware-key-only access stored in dual-control vault.\nVerify enforcement with monthly conditional access reports."
+    },
+    {
+      "id": "MP-030",
+      "name": "Endpoint Detection & Response Deployment",
+      "ownerId": "USR-001",
+      "status": "Completed",
+      "dueDate": "2026-03-20",
+      "orgUnitId": "BU-049",
+      "severity": 5,
+      "severityLabel": "Very high",
+      "controlIds": [
+        "CTL-EDR"
+      ],
+      "cyberRiskIds": [
+        "CR-002"
+      ],
+      "assessmentIds": [
+        "CRA-029",
+        "CRA-030"
+      ],
+      "assetIds": [
+        "AST-017"
+      ],
+      "actionPlan": "Define EDR requirements: behavioral ransomware detection, automated isolation, kernel-level visibility, 24/7 managed response option.\nRun a 2-week bake-off between two leading vendors on representative endpoint sample.\nProcure licensing for full endpoint fleet plus servers hosting scoped assets.\nDeploy in monitor-only mode for 2 weeks to baseline normal behavior and tune false positives.\nSwitch to prevention mode for endpoint fleet; phase server enforcement to avoid operational impact.\nIntegrate alerts with SOC / SIEM and define ransomware-specific runbooks (auto-isolate on encryption behavior).",
+      "relatedControlNames": [
+        "Endpoint Detection & Response"
+      ]
     }
   ],
   "cyberRisks": [
@@ -12233,16 +12321,16 @@
       "ownerId": "USR-001",
       "status": "Monitoring",
       "orgUnitId": "BU-001",
-      "likelihood": 1,
-      "likelihoodLabel": "Very low",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
       "impact": 4,
       "impactLabel": "High",
-      "cyberRiskScore": 4,
-      "cyberRiskScoreLabel": "Very low",
-      "residualLikelihood": 1,
-      "residualLikelihoodLabel": "Very low",
-      "residualCyberRiskScore": 4,
-      "residualCyberRiskScoreLabel": "Very low",
+      "cyberRiskScore": 80,
+      "cyberRiskScoreLabel": "High",
+      "residualLikelihood": 15,
+      "residualLikelihoodLabel": "Medium",
+      "residualCyberRiskScore": 60,
+      "residualCyberRiskScoreLabel": "Medium",
       "assetIds": [
         "AST-001",
         "AST-002",
@@ -12351,11 +12439,18 @@
         "SC-178",
         "SC-218",
         "SC-219",
-        "SC-220"
+        "SC-220",
+        "SCA-CRA-029-CR-001-AST-001-THR-001",
+        "SCA-CRA-029-CR-001-AST-001-THR-002",
+        "SCA-CRA-029-CR-001-AST-001-THR-039",
+        "SCA-CRA-029-CR-001-AST-002-THR-001",
+        "SCA-CRA-029-CR-001-AST-002-THR-002",
+        "SCA-CRA-029-CR-001-AST-002-THR-039"
       ],
       "mitigationPlanIds": [
         "MP-001",
-        "MP-008"
+        "MP-008",
+        "MP-029"
       ],
       "relationships": {
         "assetIds": [
@@ -12434,10 +12529,18 @@
           "THR-051"
         ],
         "vulnerabilityIds": [],
-        "scenarioIds": [],
+        "scenarioIds": [
+          "SCA-CRA-029-CR-001-AST-001-THR-001",
+          "SCA-CRA-029-CR-001-AST-001-THR-002",
+          "SCA-CRA-029-CR-001-AST-001-THR-039",
+          "SCA-CRA-029-CR-001-AST-002-THR-001",
+          "SCA-CRA-029-CR-001-AST-002-THR-002",
+          "SCA-CRA-029-CR-001-AST-002-THR-039"
+        ],
         "mitigationPlanIds": [
           "MP-001",
-          "MP-008"
+          "MP-008",
+          "MP-029"
         ],
         "assessmentIds": [
           "CRA-010",
@@ -12458,15 +12561,15 @@
       "ownerId": "USR-002",
       "status": "Mitigation",
       "orgUnitId": "BU-002",
-      "likelihood": 18,
-      "likelihoodLabel": "High",
-      "impact": 2,
-      "impactLabel": "Low",
-      "cyberRiskScore": 36,
-      "cyberRiskScoreLabel": "Low",
-      "residualLikelihood": 18,
-      "residualLikelihoodLabel": "High",
-      "residualCyberRiskScore": 36,
+      "likelihood": 25,
+      "likelihoodLabel": "Very high",
+      "impact": 5,
+      "impactLabel": "Very high",
+      "cyberRiskScore": 125,
+      "cyberRiskScoreLabel": "Very high",
+      "residualLikelihood": 9,
+      "residualLikelihoodLabel": "Low",
+      "residualCyberRiskScore": 45,
       "residualCyberRiskScoreLabel": "Low",
       "assetIds": [
         "AST-003",
@@ -12587,11 +12690,15 @@
         "SC-250",
         "SC-260",
         "SC-261",
-        "SC-262"
+        "SC-262",
+        "SCA-CRA-029-CR-002-AST-001-THR-003",
+        "SCA-CRA-029-CR-002-AST-002-THR-003",
+        "SCA-CRA-029-CR-002-AST-017-THR-003"
       ],
       "mitigationPlanIds": [
         "MP-002",
-        "MP-009"
+        "MP-009",
+        "MP-030"
       ],
       "relationships": {
         "assetIds": [
@@ -12690,10 +12797,15 @@
           "THR-040"
         ],
         "vulnerabilityIds": [],
-        "scenarioIds": [],
+        "scenarioIds": [
+          "SCA-CRA-029-CR-002-AST-001-THR-003",
+          "SCA-CRA-029-CR-002-AST-002-THR-003",
+          "SCA-CRA-029-CR-002-AST-017-THR-003"
+        ],
         "mitigationPlanIds": [
           "MP-002",
-          "MP-009"
+          "MP-009",
+          "MP-030"
         ],
         "assessmentIds": [
           "CRA-010",
@@ -12818,7 +12930,8 @@
       ],
       "threatIds": [
         "THR-018",
-        "THR-031"
+        "THR-031",
+        "THR-050"
       ],
       "vulnerabilityIds": [],
       "scenarioIds": [
@@ -12945,13 +13058,8 @@
         ],
         "threatIds": [
           "THR-018",
-          "THR-031"
-        ],
-        "vulnerabilityIds": [],
-        "scenarioIds": [],
-        "mitigationPlanIds": [
-          "MP-003",
-          "MP-010"
+          "THR-031",
+          "THR-050"
         ],
         "assessmentIds": [
           "CRA-020",
@@ -13932,16 +14040,16 @@
       "ownerId": "USR-010",
       "status": "Monitoring",
       "orgUnitId": "BU-010",
-      "likelihood": 4,
-      "likelihoodLabel": "Very low",
+      "likelihood": 25,
+      "likelihoodLabel": "Very high",
       "impact": 5,
       "impactLabel": "Very high",
-      "cyberRiskScore": 20,
-      "cyberRiskScoreLabel": "Very low",
-      "residualLikelihood": 4,
-      "residualLikelihoodLabel": "Very low",
-      "residualCyberRiskScore": 20,
-      "residualCyberRiskScoreLabel": "Very low",
+      "cyberRiskScore": 125,
+      "cyberRiskScoreLabel": "Very high",
+      "residualLikelihood": 25,
+      "residualLikelihoodLabel": "Very high",
+      "residualCyberRiskScore": 125,
+      "residualCyberRiskScoreLabel": "Very high",
       "assetIds": [
         "AST-002",
         "AST-009",
@@ -13984,7 +14092,10 @@
         "SC-151",
         "SC-185",
         "SC-186",
-        "SC-187"
+        "SC-187",
+        "SCA-CRA-029-CR-010-AST-001-THR-004",
+        "SCA-CRA-029-CR-010-AST-002-THR-004",
+        "SCA-CRA-029-CR-010-AST-017-THR-004"
       ],
       "mitigationPlanIds": [
         "MP-010",
@@ -14027,14 +14138,19 @@
           "THR-020"
         ],
         "vulnerabilityIds": [],
-        "scenarioIds": [],
+        "scenarioIds": [
+          "SCA-CRA-029-CR-010-AST-001-THR-004",
+          "SCA-CRA-029-CR-010-AST-002-THR-004",
+          "SCA-CRA-029-CR-010-AST-017-THR-004"
+        ],
         "mitigationPlanIds": [
           "MP-010",
           "MP-002"
         ],
         "assessmentIds": [
           "CRA-022",
-          "CRA-023"
+          "CRA-023",
+          "CRA-029"
         ]
       }
     },
@@ -14867,6 +14983,244 @@
     }
   ],
   "riskAssessments": [
+    {
+      "id": "CRA-029",
+      "name": "Q2 2026 Ransomware Readiness Assessment",
+      "ownerId": "USR-001",
+      "status": "Approved",
+      "assessmentType": "Inherent scoring",
+      "startDate": "2026-04-01",
+      "dueDate": "2026-06-30",
+      "assetIds": [
+        "AST-001",
+        "AST-002",
+        "AST-017"
+      ],
+      "cyberRiskIds": [
+        "CR-002",
+        "CR-010",
+        "CR-001"
+      ],
+      "threatIds": [
+        "THR-001",
+        "THR-002",
+        "THR-039",
+        "THR-004",
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-013",
+        "VUL-011",
+        "VUL-002",
+        "VUL-008",
+        "VUL-028",
+        "VUL-030"
+      ],
+      "scenarioIds": [
+        "SCA-CRA-029-CR-001-AST-001-THR-001",
+        "SCA-CRA-029-CR-001-AST-001-THR-002",
+        "SCA-CRA-029-CR-001-AST-001-THR-039",
+        "SCA-CRA-029-CR-001-AST-002-THR-001",
+        "SCA-CRA-029-CR-001-AST-002-THR-002",
+        "SCA-CRA-029-CR-001-AST-002-THR-039",
+        "SCA-CRA-029-CR-002-AST-001-THR-003",
+        "SCA-CRA-029-CR-002-AST-002-THR-003",
+        "SCA-CRA-029-CR-002-AST-017-THR-003",
+        "SCA-CRA-029-CR-010-AST-001-THR-004",
+        "SCA-CRA-029-CR-010-AST-002-THR-004",
+        "SCA-CRA-029-CR-010-AST-017-THR-004"
+      ],
+      "excludedScopeCyberRiskIds": [
+        "CR-003",
+        "CR-004",
+        "CR-005",
+        "CR-007",
+        "CR-012",
+        "CR-013",
+        "CR-014",
+        "CR-015"
+      ],
+      "excludedScopeThreatIds": [
+        "THR-005",
+        "THR-006",
+        "THR-007",
+        "THR-009",
+        "THR-010",
+        "THR-014",
+        "THR-015",
+        "THR-016",
+        "THR-017",
+        "THR-021",
+        "THR-022",
+        "THR-025",
+        "THR-027",
+        "THR-033",
+        "THR-035",
+        "THR-036",
+        "THR-037",
+        "THR-040",
+        "THR-042",
+        "THR-043",
+        "THR-046",
+        "THR-048",
+        "THR-051",
+        "THR-052",
+        "THR-058"
+      ],
+      "excludedScopeVulnerabilityIds": [
+        "VUL-001",
+        "VUL-003",
+        "VUL-005",
+        "VUL-006",
+        "VUL-007",
+        "VUL-009",
+        "VUL-010",
+        "VUL-012"
+      ],
+      "excludedScopeControlIds": [
+        "CTL-001",
+        "CTL-002",
+        "CTL-003",
+        "CTL-011",
+        "CTL-012",
+        "CTL-013",
+        "CTL-015",
+        "CTL-016",
+        "CTL-022",
+        "CTL-023",
+        "CTL-025",
+        "CTL-026",
+        "CTL-027",
+        "CTL-029",
+        "CTL-030",
+        "CTL-032",
+        "CTL-033",
+        "CTL-EDR",
+        "CTL-SAT"
+      ],
+      "excludedScopeScenarioIds": [],
+      "aiScoringPhase": "complete",
+      "instructions": "Evaluate the organization's exposure to ransomware and destructive malware across the three highest-leverage targets: identity infrastructure, source code, and customer data. Assess inherent risk before controls, then evaluate residual risk after the recommended mitigation plan is in place."
+    },
+    {
+      "id": "CRA-030",
+      "name": "Q2 2026 Ransomware Residual Risk Re-Assessment",
+      "ownerId": "USR-001",
+      "status": "Approved",
+      "assessmentType": "Residual scoring",
+      "startDate": "2026-06-01",
+      "dueDate": "2026-06-30",
+      "assetIds": [
+        "AST-001",
+        "AST-002",
+        "AST-017"
+      ],
+      "cyberRiskIds": [
+        "CR-002",
+        "CR-010",
+        "CR-001"
+      ],
+      "threatIds": [
+        "THR-001",
+        "THR-002",
+        "THR-039",
+        "THR-004",
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-013",
+        "VUL-011",
+        "VUL-002",
+        "VUL-008",
+        "VUL-028",
+        "VUL-030"
+      ],
+      "scenarioIds": [
+        "SCA-CRA-030-CR-001-AST-001-THR-001",
+        "SCA-CRA-030-CR-001-AST-001-THR-002",
+        "SCA-CRA-030-CR-001-AST-001-THR-039",
+        "SCA-CRA-030-CR-001-AST-002-THR-001",
+        "SCA-CRA-030-CR-001-AST-002-THR-002",
+        "SCA-CRA-030-CR-001-AST-002-THR-039",
+        "SCA-CRA-030-CR-002-AST-001-THR-003",
+        "SCA-CRA-030-CR-002-AST-002-THR-003",
+        "SCA-CRA-030-CR-002-AST-017-THR-003",
+        "SCA-CRA-030-CR-010-AST-001-THR-004",
+        "SCA-CRA-030-CR-010-AST-002-THR-004",
+        "SCA-CRA-030-CR-010-AST-017-THR-004"
+      ],
+      "excludedScopeCyberRiskIds": [
+        "CR-003",
+        "CR-004",
+        "CR-005",
+        "CR-007",
+        "CR-012",
+        "CR-013",
+        "CR-014",
+        "CR-015"
+      ],
+      "excludedScopeThreatIds": [
+        "THR-005",
+        "THR-006",
+        "THR-007",
+        "THR-009",
+        "THR-010",
+        "THR-014",
+        "THR-015",
+        "THR-016",
+        "THR-017",
+        "THR-021",
+        "THR-022",
+        "THR-025",
+        "THR-027",
+        "THR-033",
+        "THR-035",
+        "THR-036",
+        "THR-037",
+        "THR-040",
+        "THR-042",
+        "THR-043",
+        "THR-046",
+        "THR-048",
+        "THR-051",
+        "THR-052",
+        "THR-058"
+      ],
+      "excludedScopeVulnerabilityIds": [
+        "VUL-001",
+        "VUL-003",
+        "VUL-005",
+        "VUL-006",
+        "VUL-007",
+        "VUL-009",
+        "VUL-010",
+        "VUL-012"
+      ],
+      "excludedScopeControlIds": [
+        "CTL-002",
+        "CTL-003",
+        "CTL-011",
+        "CTL-012",
+        "CTL-013",
+        "CTL-015",
+        "CTL-016",
+        "CTL-022",
+        "CTL-023",
+        "CTL-025",
+        "CTL-026",
+        "CTL-027",
+        "CTL-029",
+        "CTL-030",
+        "CTL-032",
+        "CTL-033",
+        "CTL-SAT"
+      ],
+      "excludedScopeScenarioIds": [],
+      "instructions": "Following completion of the Q2 2026 Ransomware Readiness Assessment and closure of two priority mitigation plans (Phishing-Resistant MFA Rollout and Endpoint Detection & Response Deployment), this assessment re-evaluates the residual cyber risk exposure across the same scope.\n\nThe objective is to validate whether the implemented controls have materially reduced the inherent risk identified in Q2, capture the new risk posture for Risk Committee approval, and identify any remaining gaps that require further mitigation.\n\nScoring methodology and asset impact ratings are unchanged from the inherent assessment to ensure trend comparability.\n\nControls now in scope for residual scoring: CTL-001 Multi-factor authentication (FIDO2 and passkeys for privileged accounts) and CTL-EDR Endpoint Detection & Response (deployed across the endpoint fleet and scoped servers).",
+      "aiScoringPhase": "complete"
+    },
     {
       "id": "CRA-001",
       "name": "Test Assessment",
@@ -27641,6 +27995,982 @@
           "CTL-023",
           "CTL-031"
         ],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-001-THR-001",
+      "name": "Account takeover and session abuse on Customer Database Server (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-029",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 80,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-001"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-011",
+        "VUL-002",
+        "VUL-008"
+      ],
+      "scoringRationale": "Q2 2026 ransomware readiness — Unauthorized privileged access and credential compromise.\n\nWe assess account takeover and session abuse against Customer Database Server. Contributing vulnerabilities include missing or weak multi-factor authentication (VUL-004), default or weak system credentials (VUL-011), broken access control and authorization gaps (VUL-002), and excessive database privilege grants (VUL-008). Together they allow credential replay, session hijacking, and lateral movement into data stores.\n\nThreat level is very high because organized ransomware operators routinely harvest credentials from phishing and infostealer ecosystems. For this catalog slice combined vulnerability severity is high (not very high), keeping the parent likelihood in the high band alongside high asset impact.\n\nLikelihood is high and the scenario cyber risk score is high: privileged access paths are exposed and actively targeted.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-001"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-011",
+          "VUL-002",
+          "VUL-008"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-001-THR-002",
+      "name": "Automated credential stuffing on Customer Database Server (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-029",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 80,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-002"
+      ],
+      "vulnerabilityIds": [
+        "VUL-011",
+        "VUL-002",
+        "VUL-004"
+      ],
+      "scoringRationale": "Credential stuffing against Customer Database Server succeeds when default or weak system credentials (VUL-011) and missing phishing-resistant MFA (VUL-004) let attackers validate large password lists. Broken access control and authorization gaps (VUL-002) amplify impact by allowing elevated sessions to persist.\n\nThreat actors automate login attempts at scale; likelihood is high and overall cyber risk score is high for this scenario under Q2 scope.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-002"
+        ],
+        "vulnerabilityIds": [
+          "VUL-011",
+          "VUL-002",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-001-THR-039",
+      "name": "Broken authentication on internet-facing paths to Customer Database Server (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-029",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 80,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-039"
+      ],
+      "vulnerabilityIds": [
+        "VUL-002",
+        "VUL-004",
+        "VUL-008"
+      ],
+      "scoringRationale": "Broken authentication on internet-facing microservices (THR-039) maps to authorization gaps (VUL-002), absent strong MFA on admin paths (VUL-004), and excessive database privilege grants (VUL-008). Attackers chain API abuse to reach the customer database tier.\n\nImpact is high; combined severities are capped at high residual vulnerability exposure for this slice, yielding high likelihood and a high scenario cyber risk score.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-039"
+        ],
+        "vulnerabilityIds": [
+          "VUL-002",
+          "VUL-004",
+          "VUL-008"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-002-THR-001",
+      "name": "Account takeover and session abuse on Active Directory Service (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-029",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 60,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-001"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-011",
+        "VUL-002"
+      ],
+      "scoringRationale": "Active Directory is the control plane for identity. Account takeover (THR-001) against AD is fueled by weak MFA (VUL-004), default credentials on service accounts (VUL-011), and authorization gaps (VUL-002). Medium asset impact pairs with high combined severity on this tuple after capping residual vulnerability at high.\n\nScenario score is medium; sibling scenarios on higher-impact assets carry the peak scores for CR-001.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-001"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-011",
+          "VUL-002"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-002-THR-002",
+      "name": "Automated credential stuffing on Active Directory Service (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-029",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 20,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 60,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-002"
+      ],
+      "vulnerabilityIds": [
+        "VUL-011",
+        "VUL-004"
+      ],
+      "scoringRationale": "Credential stuffing against Active Directory (THR-002) exploits weak passwords and absent phishing-resistant MFA (VUL-004, VUL-011). This scenario supports the overall CR-001 exposure narrative while peak scores come from customer data paths.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-002"
+        ],
+        "vulnerabilityIds": [
+          "VUL-011",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-001-AST-002-THR-039",
+      "name": "Broken authentication against Active Directory Service (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-029",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 4,
+      "vulnerabilitySeverityLabel": "High",
+      "likelihood": 19,
+      "likelihoodLabel": "High",
+      "cyberRiskScore": 57,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-039"
+      ],
+      "vulnerabilityIds": [
+        "VUL-002",
+        "VUL-004"
+      ],
+      "scoringRationale": "Broken authentication patterns (THR-039) against identity infrastructure leverage authorization gaps (VUL-002) and weak MFA coverage (VUL-004), keeping AD in the blast radius for ransomware preparation.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-039"
+        ],
+        "vulnerabilityIds": [
+          "VUL-002",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-002-AST-001-THR-003",
+      "name": "Ransomware and destructive malware against Customer Database Server (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-029",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 88,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-011",
+        "VUL-030"
+      ],
+      "scoringRationale": "Ransomware (THR-003) against Customer Database Server is worsened by absent or misconfigured endpoint detection (VUL-013), default or weak credentials on recovery interfaces (VUL-011), and an incomplete or untested incident response plan (VUL-030) that delays isolation.\n\nHigh asset impact and very high combined severities produce a high cyber risk score for this scenario.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-011",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-002-AST-002-THR-003",
+      "name": "Ransomware and destructive malware against Active Directory Service (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-029",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 66,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-030",
+        "VUL-028"
+      ],
+      "scoringRationale": "Encrypting or wiping domain controllers is a common ransomware pivot. Endpoint detection gaps (VUL-013), weak tabletop coverage (VUL-030), and insufficient security awareness (VUL-028) slow detection. Medium impact on this asset still yields very high likelihood; peak CR-002 scores come from Code Repository and Customer Database scenarios.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-030",
+          "VUL-028"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-002-AST-017-THR-003",
+      "name": "Ransomware and destructive malware against Code Repository (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-017",
+      "assessmentId": "CRA-029",
+      "impact": 5,
+      "impactLabel": "Very high",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 23,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 115,
+      "cyberRiskScoreLabel": "Very high",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-011",
+        "VUL-030"
+      ],
+      "scoringRationale": "Source code is a crown jewel: ransomware and destructive malware (THR-003) against the Code Repository combines very high impact with absent or misconfigured endpoint detection (VUL-013), weak credentials on build agents (VUL-011), and immature IR runbooks (VUL-030). Attackers can destroy builds, poison artifacts, and move to production.\n\nLikelihood and cyber risk score are very high for this scenario.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-017",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-011",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-010-AST-001-THR-004",
+      "name": "Phishing and business email compromise against Customer Database Server (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-029",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 88,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-028",
+        "VUL-030"
+      ],
+      "scoringRationale": "Phishing and BEC (THR-004) against operators of Customer Database Server exploit missing phishing-resistant MFA (VUL-004), insufficient security awareness and training (VUL-028), and incomplete IR rehearsal (VUL-030). One successful session can lead to mass data impact.\n\nCyber risk score is high for this scenario.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-028",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-010-AST-002-THR-004",
+      "name": "Phishing and business email compromise against Active Directory Service (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-029",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 66,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-028"
+      ],
+      "scoringRationale": "Phishing against administrators of Active Directory (THR-004) pairs very high threat severity with weak MFA adoption (VUL-004) and training gaps (VUL-028). This scenario keeps identity administrators inside the social-engineering blast radius.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-028"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-029-CR-010-AST-017-THR-004",
+      "name": "Phishing and business email compromise against Code Repository (Q2 CRA)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-017",
+      "assessmentId": "CRA-029",
+      "impact": 5,
+      "impactLabel": "Very high",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 23,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 115,
+      "cyberRiskScoreLabel": "Very high",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-028",
+        "VUL-004",
+        "VUL-030"
+      ],
+      "scoringRationale": "Developers with access to Code Repository are high-value phishing targets. Very high impact on the repository, very high threat from BEC, and weaknesses in MFA (VUL-004), awareness (VUL-028), and IR readiness (VUL-030) create a very high cyber risk score.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-017",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-028",
+          "VUL-004",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-001-THR-001",
+      "name": "Account takeover and session abuse on Customer Database Server (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-030",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 14,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 56,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-001"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-011",
+        "VUL-002",
+        "VUL-008"
+      ],
+      "scoringRationale": "Q2 2026 residual re-assessment — Unauthorized privileged access and credential compromise.\n\nAccount takeover and session abuse against Customer Database Server is reassessed after CTL-001 (FIDO2 and passkeys for privileged accounts) materially reduced missing or weak MFA exposure (VUL-004). Residual exposure still includes default or weak system credentials on legacy interfaces (VUL-011), broken access control and authorization gaps (VUL-002), and excessive database privilege grants (VUL-008).\n\nThreat severity remains very high because attackers still monetize harvested credentials. Combined residual vulnerability severity is medium after MFA hardening. Likelihood and scenario cyber risk score are medium—lower than the Q2 inherent pass—while privileged paths still warrant monitoring.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-001"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-011",
+          "VUL-002",
+          "VUL-008"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-001-THR-002",
+      "name": "Automated credential stuffing on Customer Database Server (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-030",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 13,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 52,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-002"
+      ],
+      "vulnerabilityIds": [
+        "VUL-011",
+        "VUL-002",
+        "VUL-004"
+      ],
+      "scoringRationale": "Credential stuffing (THR-002) is dampened by phishing-resistant MFA on privileged paths (CTL-001), lowering the practical value of password spraying against the highest-risk accounts. Residual gaps remain where legacy accounts or service principals still rely on weaker factors (VUL-004, VUL-011) and authorization drift persists (VUL-002).\n\nResidual likelihood is medium and the scenario score is medium—below the inherent Q2 assessment but not eliminated.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-002"
+        ],
+        "vulnerabilityIds": [
+          "VUL-011",
+          "VUL-002",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-001-THR-039",
+      "name": "Broken authentication on internet-facing paths to Customer Database Server (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-030",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 14,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 56,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-039"
+      ],
+      "vulnerabilityIds": [
+        "VUL-002",
+        "VUL-004",
+        "VUL-008"
+      ],
+      "scoringRationale": "Broken authentication on internet-facing microservices (THR-039) still maps to authorization gaps (VUL-002) and excessive database privilege grants (VUL-008), but admin-facing paths now enforce stronger MFA (CTL-001), reducing blast radius to the customer database tier.\n\nResidual combined vulnerability severity is medium; likelihood is medium and the scenario cyber risk score is medium versus the higher inherent Q2 position.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-039"
+        ],
+        "vulnerabilityIds": [
+          "VUL-002",
+          "VUL-004",
+          "VUL-008"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-002-THR-001",
+      "name": "Account takeover and session abuse on Active Directory Service (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 14,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 42,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-001"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-011",
+        "VUL-002"
+      ],
+      "scoringRationale": "Active Directory remains the identity control plane. After CTL-001, account takeover (THR-001) is harder for privileged operators, but residual credential hygiene issues (VUL-011) and authorization gaps (VUL-002) still matter for break-glass and legacy automation accounts.\n\nMedium asset impact with medium residual likelihood yields a medium scenario score, down from the inherent Q2 AD scenarios.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-001"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-011",
+          "VUL-002"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-002-THR-002",
+      "name": "Automated credential stuffing on Active Directory Service (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 12,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 36,
+      "cyberRiskScoreLabel": "Very low",
+      "threatIds": [
+        "THR-002"
+      ],
+      "vulnerabilityIds": [
+        "VUL-011",
+        "VUL-004"
+      ],
+      "scoringRationale": "Automated stuffing (THR-002) against AD is less effective where phishing-resistant MFA blocks interactive abuse of stolen passwords (CTL-001). Residual risk concentrates on accounts not yet migrated or dependent on legacy protocols (VUL-004, VUL-011).\n\nLikelihood is medium; scenario cyber risk score is very low on this medium-impact asset after control uplift.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-002"
+        ],
+        "vulnerabilityIds": [
+          "VUL-011",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-001-AST-002-THR-039",
+      "name": "Broken authentication against Active Directory Service (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-001",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 12,
+      "likelihoodLabel": "Medium",
+      "cyberRiskScore": 36,
+      "cyberRiskScoreLabel": "Very low",
+      "threatIds": [
+        "THR-039"
+      ],
+      "vulnerabilityIds": [
+        "VUL-002",
+        "VUL-004"
+      ],
+      "scoringRationale": "Broken authentication patterns (THR-039) still touch authorization gaps (VUL-002), but privileged authentication now follows stronger MFA policy (CTL-001), shrinking realistic abuse paths.\n\nResidual likelihood is medium and the scenario score is very low for this medium-impact AD row compared with inherent Q2.",
+      "relationships": {
+        "cyberRiskId": "CR-001",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-039"
+        ],
+        "vulnerabilityIds": [
+          "VUL-002",
+          "VUL-004"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-002-AST-001-THR-003",
+      "name": "Ransomware and destructive malware against Customer Database Server (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 3,
+      "threatSeverityLabel": "Medium",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 9,
+      "likelihoodLabel": "Low",
+      "cyberRiskScore": 27,
+      "cyberRiskScoreLabel": "Very low",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-011",
+        "VUL-030"
+      ],
+      "scoringRationale": "Ransomware (THR-003) against Customer Database Server is reassessed after CTL-EDR improved detection and response on scoped servers and endpoints hosting recovery paths. Residual scoring reflects materially reduced exploitable threat and vulnerability severity (medium threat, medium vulnerability) on this tuple after EDR uplift.\n\nParent aggregation still peaks on the Code Repository tuple for CR-002; this row is a lower residual slice with low combined likelihood product.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-011",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-002-AST-002-THR-003",
+      "name": "Ransomware and destructive malware against Active Directory Service (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 3,
+      "threatSeverityLabel": "Medium",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 9,
+      "likelihoodLabel": "Low",
+      "cyberRiskScore": 27,
+      "cyberRiskScoreLabel": "Very low",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-030",
+        "VUL-028"
+      ],
+      "scoringRationale": "Domain controller ransomware pivots are still plausible at reduced residual severity after CTL-EDR: threat and vulnerability severities are capped at medium on this AD slice, yielding a low likelihood product versus the inherent Q2 pass.\n\nScenario score is very low on medium impact; parent row peaks on the repository tuple.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-030",
+          "VUL-028"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-002-AST-017-THR-003",
+      "name": "Ransomware and destructive malware against Code Repository (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-002",
+      "assetId": "AST-017",
+      "assessmentId": "CRA-030",
+      "impact": 5,
+      "impactLabel": "Very high",
+      "threatSeverity": 3,
+      "threatSeverityLabel": "Medium",
+      "vulnerabilitySeverity": 3,
+      "vulnerabilitySeverityLabel": "Medium",
+      "likelihood": 9,
+      "likelihoodLabel": "Low",
+      "cyberRiskScore": 45,
+      "cyberRiskScoreLabel": "Low",
+      "threatIds": [
+        "THR-003"
+      ],
+      "vulnerabilityIds": [
+        "VUL-013",
+        "VUL-011",
+        "VUL-030"
+      ],
+      "scoringRationale": "The Code Repository remains a crown-jewel asset (very high impact). After EDR deployment, residual assessment caps combined threat and vulnerability severity at medium on this tuple, so the parent likelihood product is low and the scenario cyber risk score is low (45) versus inherent very high.\n\nThis row drives the CR-002 parent residual position in the low-likelihood band while CR-010 remains the top-right peak.",
+      "relationships": {
+        "cyberRiskId": "CR-002",
+        "assetId": "AST-017",
+        "threatIds": [
+          "THR-003"
+        ],
+        "vulnerabilityIds": [
+          "VUL-013",
+          "VUL-011",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-010-AST-001-THR-004",
+      "name": "Phishing and business email compromise against Customer Database Server (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-001",
+      "assessmentId": "CRA-030",
+      "impact": 4,
+      "impactLabel": "High",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 88,
+      "cyberRiskScoreLabel": "High",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-028",
+        "VUL-030"
+      ],
+      "scoringRationale": "Phishing and BEC (THR-004) against operators of Customer Database Server still exploit human factors: gaps in phishing-resistant coverage where non-privileged workflows remain (VUL-004), insufficient security awareness and training (VUL-028), and incomplete IR rehearsal (VUL-030). MFA rollout targeted privileged paths; social engineering remains a primary path to session misuse.\n\nNo dedicated mitigation plan closed for CR-010 in this storyline, so residual posture matches the inherent Q2 assessment for this scenario tuple.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-001",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-028",
+          "VUL-030"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-010-AST-002-THR-004",
+      "name": "Phishing and business email compromise against Active Directory Service (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-002",
+      "assessmentId": "CRA-030",
+      "impact": 3,
+      "impactLabel": "Medium",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 22,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 66,
+      "cyberRiskScoreLabel": "Medium",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-004",
+        "VUL-028"
+      ],
+      "scoringRationale": "Phishing against administrators of Active Directory (THR-004) still pairs very high threat severity with MFA gaps outside the privileged rollout perimeter (VUL-004) and training weaknesses (VUL-028). CTL-001 reduces some paths, but administrator social engineering remains a dominant residual vector for CR-010.\n\nScores are unchanged from inherent Q2 for comparability where no CR-010 mitigation plan completed.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-002",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-004",
+          "VUL-028"
+        ],
+        "controlIds": [],
+        "mitigationPlanIds": []
+      }
+    },
+    {
+      "id": "SCA-CRA-030-CR-010-AST-017-THR-004",
+      "name": "Phishing and business email compromise against Code Repository (Q2 residual)",
+      "ownerId": "USR-001",
+      "cyberRiskId": "CR-010",
+      "assetId": "AST-017",
+      "assessmentId": "CRA-030",
+      "impact": 5,
+      "impactLabel": "Very high",
+      "threatSeverity": 5,
+      "threatSeverityLabel": "Very high",
+      "vulnerabilitySeverity": 5,
+      "vulnerabilitySeverityLabel": "Very high",
+      "likelihood": 23,
+      "likelihoodLabel": "Very high",
+      "cyberRiskScore": 115,
+      "cyberRiskScoreLabel": "Very high",
+      "threatIds": [
+        "THR-004"
+      ],
+      "vulnerabilityIds": [
+        "VUL-028",
+        "VUL-004",
+        "VUL-030"
+      ],
+      "scoringRationale": "Developers with access to the Code Repository remain high-value phishing targets. Very high impact, very high threat from BEC, and persistent weaknesses in awareness (VUL-028), inconsistent MFA on developer workflows (VUL-004), and IR readiness under pressure (VUL-030) keep this scenario at the top of the CR-010 range.\n\nUnchanged from inherent Q2: no CR-010 mitigation plan closure in this catalog narrative.",
+      "relationships": {
+        "cyberRiskId": "CR-010",
+        "assetId": "AST-017",
+        "threatIds": [
+          "THR-004"
+        ],
+        "vulnerabilityIds": [
+          "VUL-028",
+          "VUL-004",
+          "VUL-030"
+        ],
+        "controlIds": [],
         "mitigationPlanIds": []
       }
     }

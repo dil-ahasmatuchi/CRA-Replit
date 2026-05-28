@@ -62,13 +62,19 @@ export interface RisksMatrixProps {
   assessmentMatrixMode?: AssessmentMatrixMode;
 }
 
-/** Position-based risk level for a 5x5 matrix: green (bottom-left) to red (top-right). */
+/**
+ * Likelihood × impact cell severity for the 5×5 heatmap (same row/column semantics as
+ * `buildCyberRiskHeatmapAggregates`: row 0 = very high likelihood … row 4 = very low;
+ * col 0 = very low impact … col 4 = very high).
+ *
+ * Uses numeric weights VL=5 … VH=25 per axis; score = (L×I)/5 = 5×(5−rowIdx)×(colIdx+1), then CRA brackets.
+ */
 export function getCellLevel(rowIdx: number, colIdx: number): RiskHeatmapLevel {
-  const sum = (4 - rowIdx) + colIdx;
-  if (sum <= 1) return "veryLow";
-  if (sum <= 3) return "low";
-  if (sum === 4) return "medium";
-  if (sum <= 6) return "high";
+  const score = 5 * (5 - rowIdx) * (colIdx + 1);
+  if (score <= 25) return "veryLow";
+  if (score <= 50) return "low";
+  if (score <= 75) return "medium";
+  if (score <= 100) return "high";
   return "veryHigh";
 }
 

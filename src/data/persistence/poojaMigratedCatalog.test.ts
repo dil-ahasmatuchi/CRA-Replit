@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
 import bundledCatalog from "../generated/pooja-migrated-catalog.v3.json";
+import type { MockScenario } from "../types.js";
+import { buildHeatmapCyberRisksForResultsTab } from "../../utils/assessmentResultsHeatmapRisks.js";
+import { parentResultChipsFromScenarios } from "../../utils/craAssessmentParentRowChips.js";
+import { buildCyberRiskHeatmapAggregates } from "../../utils/cyberRiskMatrixAggregates.js";
+import type { AssessmentCyberResultsRow } from "../../pages/craAssessmentScopeRows.js";
 import type { PersistedCatalogV3 } from "./catalogTypes.js";
 import { parsePersistedCatalog } from "./catalogStore.js";
 
@@ -103,5 +108,92 @@ describe("pooja migrated catalog bundle", () => {
     const byCra = new Set(sameNameCrAsset.map((s) => s.assessmentId));
     expect(byCra.size).toBeGreaterThan(1);
     expect(sameNameCrAsset.length).toBeGreaterThanOrEqual(byCra.size);
+  });
+
+  it("CR-001 library inherent matches CRA-029 Highest parent chips (80 High)", () => {
+    const c = bundledCatalog as PersistedCatalogV3;
+    const cr1 = c.cyberRisks.find((r) => r.id === "CR-001");
+    expect(cr1).toBeDefined();
+    expect(cr1!.impact).toBe(4);
+    expect(cr1!.impactLabel).toBe("High");
+    expect(cr1!.likelihood).toBe(20);
+    expect(cr1!.likelihoodLabel).toBe("High");
+    expect(cr1!.cyberRiskScore).toBe(80);
+    expect(cr1!.cyberRiskScoreLabel).toBe("High");
+
+    const s029 = c.scenarios.filter(
+      (s) => s.assessmentId === "CRA-029" && s.cyberRiskId === "CR-001",
+    ) as MockScenario[];
+    const chips = parentResultChipsFromScenarios(s029, "highest");
+    expect(chips.impact.numeric).toBe("4");
+    expect(chips.likelihood.numeric).toBe("20");
+    expect(chips.cyberRiskScore.numeric).toBe("80");
+    expect(chips.cyberRiskScore.label).toBe("High");
+  });
+
+  it("CRA-030 residual: CR-010 top-right; CR-002 low-likelihood band; heatmap merge preserves inherent", () => {
+    const c = bundledCatalog as PersistedCatalogV3;
+    const s030 = c.scenarios.filter((s) => s.assessmentId === "CRA-030") as MockScenario[];
+    const byCr = (crId: string) => s030.filter((s) => s.cyberRiskId === crId);
+
+    const chips002 = parentResultChipsFromScenarios(byCr("CR-002"), "highest");
+    expect(chips002.impact.label).toBe("Very high");
+    expect(chips002.likelihood.label).toBe("Low");
+    expect(chips002.cyberRiskScore.numeric).toBe("45");
+    expect(chips002.cyberRiskScore.label).toBe("Low");
+
+    const chips010 = parentResultChipsFromScenarios(byCr("CR-010"), "highest");
+    expect(chips010.impact.label).toBe("Very high");
+    expect(chips010.likelihood.label).toBe("Very high");
+
+    const chips001 = parentResultChipsFromScenarios(byCr("CR-001"), "highest");
+
+    function cyberRiskRow(
+      id: string,
+      name: string,
+      chips: ReturnType<typeof parentResultChipsFromScenarios>,
+    ): AssessmentCyberResultsRow {
+      return {
+        id,
+        kind: "cyberRisk",
+        groupId: id,
+        name,
+        impact: chips.impact,
+        threat: chips.threat,
+        vulnerability: chips.vulnerability,
+        likelihood: chips.likelihood,
+        cyberRiskScore: chips.cyberRiskScore,
+      };
+    }
+
+    const parents: AssessmentCyberResultsRow[] = [
+      cyberRiskRow("CR-010", c.cyberRisks.find((r) => r.id === "CR-010")!.name, chips010),
+      cyberRiskRow("CR-002", c.cyberRisks.find((r) => r.id === "CR-002")!.name, chips002),
+      cyberRiskRow("CR-001", c.cyberRisks.find((r) => r.id === "CR-001")!.name, chips001),
+    ];
+
+    const scoped = (["CR-010", "CR-002", "CR-001"] as const).map((id) => {
+      const r = c.cyberRisks.find((x) => x.id === id);
+      expect(r, id).toBeDefined();
+      return r!;
+    });
+
+    const merged = buildHeatmapCyberRisksForResultsTab(scoped, parents);
+    const cr002Merged = merged.find((r) => r.id === "CR-002")!;
+    const cr002Scoped = scoped.find((r) => r.id === "CR-002")!;
+    expect(cr002Merged.impact).toBe(cr002Scoped.impact);
+    expect(cr002Merged.likelihood).toBe(cr002Scoped.likelihood);
+    expect(cr002Merged.cyberRiskScore).toBe(cr002Scoped.cyberRiskScore);
+    expect(cr002Merged.residualCyberRiskScore).toBe(45);
+    expect(cr002Merged.residualLikelihoodLabel).toBe("Low");
+    expect(cr002Merged.residualImpact).toBe(5);
+
+    const { grid: gridRes } = buildCyberRiskHeatmapAggregates(merged, "residual");
+    expect(gridRes[0]![4]).toBe(1);
+    expect(gridRes[3]![4]).toBe(1);
+    expect(gridRes[2]![3]).toBe(1);
+    const flatRes = gridRes.flat();
+    expect(Math.max(...flatRes)).toBe(1);
+    expect(flatRes.reduce((a, b) => a + b, 0)).toBe(3);
   });
 });

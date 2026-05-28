@@ -1,4 +1,5 @@
 import { assets } from "../data/assets.js";
+import type { CraScenarioScoreAggregationMethod } from "../data/craAssessmentDraftTypes.js";
 import type { CraRagKey } from "../data/craScoringScenarioLibrary.js";
 import type { MockCyberRisk, MockScenario, FivePointScaleLabel } from "../data/types.js";
 import {
@@ -6,6 +7,7 @@ import {
   getCyberRiskScoreLabel,
   getLikelihoodLabel,
 } from "../data/types.js";
+import { parentResultChipsFromScenarios } from "../utils/craAssessmentParentRowChips.js";
 import {
   assessmentUiHasHiddenScenarioCatalogScores,
   scenarioCatalogScoresVisibleInAssessmentUi,
@@ -80,13 +82,10 @@ function scenarioRowChips(s: MockScenario): ScenarioMetricChips {
   };
 }
 
-function maxChip(a: Chip, b: Chip): Chip {
-  return Number.parseFloat(a.numeric) >= Number.parseFloat(b.numeric) ? a : b;
-}
-
 function riskRowChips(
   cr: MockCyberRisk,
   scens: MockScenario[],
+  scenarioScoreAggregationMethod: CraScenarioScoreAggregationMethod = "highest",
 ): Omit<AssessmentCyberResultsRow, "id" | "kind" | "groupId" | "name"> {
   if (scens.length === 0) {
     const imp = chipFive(cr.impact, cr.impactLabel);
@@ -100,15 +99,10 @@ function riskRowChips(
       cyberRiskScore: crs,
     };
   }
-  const chips: ScenarioMetricChips[] = scens.map((s) => scenarioRowChips(s));
-  const [head, ...rest] = chips;
-  return {
-    impact: rest.reduce((a, c) => maxChip(a, c.impact), head!.impact),
-    threat: rest.reduce((a, c) => maxChip(a, c.threat), head!.threat),
-    vulnerability: rest.reduce((a, c) => maxChip(a, c.vulnerability), head!.vulnerability),
-    likelihood: rest.reduce((a, c) => maxChip(a, c.likelihood), head!.likelihood),
-    cyberRiskScore: rest.reduce((a, c) => maxChip(a, c.cyberRiskScore), head!.cyberRiskScore),
-  };
+  return parentResultChipsFromScenarios(scens, scenarioScoreAggregationMethod) as Omit<
+    AssessmentCyberResultsRow,
+    "id" | "kind" | "groupId" | "name"
+  >;
 }
 
 /** Cyber risk + scenario rows for Results, aligned with scoped Scoring data. */
@@ -117,6 +111,7 @@ export function buildCyberResultsRowsForScope(
   excludedScopeCyberRiskIds: Set<string>,
   excludedScopeScenarioIds: Set<string> = new Set(),
   scenarioScopeAssessmentId?: string,
+  scenarioScoreAggregationMethod: CraScenarioScoreAggregationMethod = "highest",
 ): AssessmentCyberResultsRow[] {
   if (includedAssetIds.size === 0) return [];
   const risks = assessmentScopedCyberRisks(includedAssetIds, excludedScopeCyberRiskIds);
@@ -136,7 +131,7 @@ export function buildCyberResultsRowsForScope(
   const rows: AssessmentCyberResultsRow[] = [];
   for (const cr of risks) {
     const scens = byRisk.get(cr.id) ?? [];
-    const rc = riskRowChips(cr, scens);
+    const rc = riskRowChips(cr, scens, scenarioScoreAggregationMethod);
     rows.push({
       id: cr.id,
       kind: "cyberRisk",
@@ -159,11 +154,14 @@ export function buildCyberResultsRowsForScope(
 }
 
 /** Inputs for {@link applyNewCraCatalogScoreMaskingToCyberResultsRows} / asset masking. */
-export type AssessmentResultsCatalogMaskParams = ScenarioCatalogMaskContext;
+export type AssessmentResultsCatalogMaskParams = ScenarioCatalogMaskContext & {
+  /** When recomputing parent cyber-risk rows after masking; defaults to `"highest"`. */
+  scenarioScoreAggregationMethod?: CraScenarioScoreAggregationMethod;
+};
 
 /**
  * Every non–N/A scenario in the group has catalog scores released or manually revealed (aligns with
- * {@link AssessmentScoringTab} parent aggregation preconditions).
+ * {@link ScoringTable} parent aggregation preconditions).
  */
 function everyApplicableScenarioCatalogVisibleForResults(
   scenariosInGroup: readonly MockScenario[],
@@ -184,6 +182,7 @@ export function applyNewCraCatalogScoreMaskingToCyberResultsRows(
   scenariosByRiskId: ReadonlyMap<string, readonly MockScenario[]>,
   p: AssessmentResultsCatalogMaskParams,
 ): AssessmentCyberResultsRow[] {
+  const aggregationMethod = p.scenarioScoreAggregationMethod ?? "highest";
   if (p.assessmentPhase === "assessmentApproved") {
     return rows;
   }
@@ -208,7 +207,7 @@ export function applyNewCraCatalogScoreMaskingToCyberResultsRows(
       row.likelihood = null;
       row.cyberRiskScore = null;
     } else {
-      const rc = riskRowChips(cr, [...scens]);
+      const rc = riskRowChips(cr, [...scens], aggregationMethod);
       row.impact = rc.impact;
       row.threat = rc.threat;
       row.vulnerability = rc.vulnerability;

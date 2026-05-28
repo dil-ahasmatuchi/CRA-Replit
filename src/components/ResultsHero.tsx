@@ -16,6 +16,10 @@ function assessmentMatrixModeFromScoringType(scoringType: CraScoringTypeChoice):
 }
 
 export type ResultsHeroProps = {
+  /**
+   * Cyber risks shown in the likelihood × impact matrix. On Assessment Results this should be the
+   * scenario-aligned slice (see `buildHeatmapCyberRisksForResultsTab`), not library rows alone.
+   */
   scopedRisks: readonly MockCyberRisk[];
   assetResultRows: readonly AssessmentAssetResultRow[];
   /** Details-tab scoring type: drives Inherent-only vs Residual-default matrix. */

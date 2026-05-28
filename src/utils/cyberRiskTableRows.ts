@@ -66,7 +66,7 @@ export const CYBER_RISK_WORKFLOW_FILTER_OPTIONS: readonly CyberRiskStatus[] = [
   "Monitoring",
 ] as const;
 
-/** Inherent cyber risk score (label) options for the filter UI. */
+/** Residual cyber risk score (label) options for the filter UI. */
 export const CYBER_RISK_SCORE_FILTER_OPTIONS: readonly FivePointScaleLabel[] = [
   "Very low",
   "Low",
@@ -80,7 +80,7 @@ export type CyberRiskTableFilters = {
   workflowStatuses: CyberRiskStatus[];
   /** Empty = no restriction (all owners). */
   ownerIds: string[];
-  /** Empty = no restriction (all score labels). */
+  /** Empty = no restriction; otherwise matches residual score labels shown in the table. */
   scoreLabels: FivePointScaleLabel[];
   /** Empty = no restriction; otherwise row must include at least one of these assets. */
   assetIds: string[];
@@ -128,8 +128,8 @@ export function buildCyberRiskRows(): CyberRiskRow[] {
       riskId: r.id,
       ownerId: r.ownerId,
       orgUnitId: r.orgUnitId,
-      cyberRiskScore: `${r.cyberRiskScore} - ${r.cyberRiskScoreLabel}`,
-      riskLevel: SCORE_LABEL_TO_HEATMAP[r.cyberRiskScoreLabel],
+      cyberRiskScore: `${r.residualCyberRiskScore} - ${r.residualCyberRiskScoreLabel}`,
+      riskLevel: SCORE_LABEL_TO_HEATMAP[r.residualCyberRiskScoreLabel],
       ownerName: owner?.fullName ?? "Unassigned",
       ownerInitials: owner?.initials ?? "",
       assets: r.assetIds.length,
@@ -154,12 +154,15 @@ export function mockCyberRiskMatchesMatrixFilter(
     | "residualLikelihoodLabel"
     | "cyberRiskScoreLabel"
     | "residualCyberRiskScoreLabel"
+    | "residualImpact"
   >,
   matrix: CyberRiskMatrixTableFilter,
 ): boolean {
   if (matrix.kind === "cell") {
     const { basis, rowIdx, colIdx } = matrix;
-    if (risk.impact !== colIdx + 1) return false;
+    const impactForCell =
+      basis === "residual" && risk.residualImpact != null ? risk.residualImpact : risk.impact;
+    if (impactForCell !== colIdx + 1) return false;
     const expectedL = heatmapRowIndexToLikelihoodLabel(rowIdx);
     if (expectedL == null) return false;
     const lik =
@@ -183,7 +186,7 @@ function rowMatchesMatrixFilter(
 function matchesCyberRiskTableFilters(
   workflowStatus: CyberRiskStatus,
   ownerId: string,
-  cyberRiskScoreLabel: FivePointScaleLabel,
+  residualCyberRiskScoreLabel: FivePointScaleLabel,
   assetIds: readonly string[],
   filters: CyberRiskTableFilters,
 ): boolean {
@@ -195,7 +198,7 @@ function matchesCyberRiskTableFilters(
 
   if (statusSet && !statusSet.has(workflowStatus)) return false;
   if (ownerSet && !ownerSet.has(ownerId)) return false;
-  if (scoreSet && !scoreSet.has(cyberRiskScoreLabel)) return false;
+  if (scoreSet && !scoreSet.has(residualCyberRiskScoreLabel)) return false;
   if (assetSet) {
     const hasOverlap = assetIds.some((id) => assetSet.has(id));
     if (!hasOverlap) return false;
@@ -212,7 +215,7 @@ export function applyCyberRiskFilters(
       !matchesCyberRiskTableFilters(
         row.workflowStatus,
         row.ownerId,
-        row.cyberRiskScoreLabel,
+        row.residualCyberRiskScoreLabel,
         row.assetIds,
         filters,
       )
@@ -245,7 +248,7 @@ export function applyCyberRiskTableFiltersToCatalogRows<
   T extends {
     status: CyberRiskStatus;
     ownerId: string;
-    cyberRiskScoreLabel: FivePointScaleLabel;
+    residualCyberRiskScoreLabel: FivePointScaleLabel;
     assetIds: readonly string[];
   },
 >(rows: T[], filters: CyberRiskTableFilters): T[] {
@@ -254,12 +257,13 @@ export function applyCyberRiskTableFiltersToCatalogRows<
     matchesCyberRiskTableFilters(
       row.status,
       row.ownerId,
-      row.cyberRiskScoreLabel,
+      row.residualCyberRiskScoreLabel,
       row.assetIds,
       basic,
     ),
   );
 }
+
 
 /** Counts filter categories with any selection (for toolbar badge). */
 export function countCyberRiskFilterCriteria(filters: CyberRiskTableFilters): number {

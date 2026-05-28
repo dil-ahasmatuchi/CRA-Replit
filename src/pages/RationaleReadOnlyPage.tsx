@@ -143,6 +143,7 @@ export default function RationaleReadOnly() {
         <ScoringRationaleHeader
           scenarioName={scenario.name.trim() || scenario.id}
           scenarioId={scenario.id}
+          confidencePercent={scenario.confidencePercent}
           breadcrumbs={breadcrumbs}
           onBack={goBackToAssessment}
           backButtonAriaLabel="Back to assessment"

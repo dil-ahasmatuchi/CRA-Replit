@@ -35,7 +35,7 @@ import ReadOnlyScoringLegendsRow from "../../components/ReadOnlyScoringLegendsRo
 import { RelationCard } from "../../components/RelationCard.js";
 import { RelationLinkedObjectRow } from "../../components/RelationLinkedObjectRow.js";
 import ResultsHero from "../../components/ResultsHero.js";
-import { ResultsTreeData } from "../../components/ResultsTreeData.js";
+import { ResultsTable } from "../../components/ResultsTable.js";
 import RiskDetailHeader from "../../components/RiskDetailHeader.js";
 import RiskSettingsHeader from "../../components/RiskSettingsHeader.js";
 import RiskStatus from "../../components/RiskStatus.js";
@@ -59,6 +59,7 @@ import ScoringFormulasWide from "../../components/ScoringFormulasWide.js";
 import ScoringInfo from "../../components/ScoringInfo.js";
 import ScoringInfoCard from "../../components/ScoringInfoCard.js";
 import ScoringInfoCardRead from "../../components/ScoringInfoCardRead.js";
+import { ScoringTable, buildScoringTableRows } from "../../components/ScoringTable.js";
 import ScoringMetricField from "../../components/ScoringMetricField.js";
 import ScoringRationaleDropdowns from "../../components/ScoringRationaleDropdowns.js";
 import ScoringRationaleFormattedBody from "../../components/ScoringRationaleFormattedBody.js";
@@ -338,7 +339,7 @@ function ResultsHeroDemo() {
   return <ResultsHero scopedRisks={risks} assetResultRows={rows} scoringType="residual" />;
 }
 
-function ResultsTreeDataDemo() {
+function ResultsTableDemo() {
   const aid = assets[0]?.id;
   const included = useMemo(() => (aid ? new Set([aid]) : new Set<string>()), [aid]);
   const cyberRows = useMemo(
@@ -348,11 +349,34 @@ function ResultsTreeDataDemo() {
   if (!aid) return <Typography>No assets in mock data.</Typography>;
   return (
     <Box sx={{ height: 420, width: "100%" }}>
-      <ResultsTreeData
+      <ResultsTable
         rows={cyberRows}
         onOpenMitigationPlan={() => {}}
         onScenarioRowClick={() => {}}
         onOpenFilters={() => {}}
+      />
+    </Box>
+  );
+}
+
+function ScoringTableDemo() {
+  const aid = assets[0]?.id;
+  const included = useMemo(() => (aid ? new Set([aid]) : new Set<string>()), [aid]);
+  const scoringRows = useMemo(
+    () => buildScoringTableRows(included, new Set(), new Set()),
+    [included],
+  );
+  if (!aid) return <Typography>No assets in mock data.</Typography>;
+  return (
+    <Box sx={{ width: "100%", overflow: "auto" }}>
+      <ScoringTable
+        rows={scoringRows}
+        aggregationMethod="highest"
+        aiScoringPhase="complete"
+        assessmentPhase="inProgress"
+        onScenarioRowClick={() => {}}
+        onRemoveCyberRiskFromAssessment={() => {}}
+        onRemoveScenarioFromAssessment={() => {}}
       />
     </Box>
   );
@@ -505,8 +529,8 @@ export function renderShowcaseComponent(slug: string): ReactNode {
       );
     case "results-hero":
       return <ResultsHeroDemo />;
-    case "results-tree-data":
-      return <ResultsTreeDataDemo />;
+    case "results-table":
+      return <ResultsTableDemo />;
     case "risk-detail-header":
       return <RiskDetailHeaderDemo />;
     case "risk-settings-header":
@@ -643,6 +667,8 @@ export function renderShowcaseComponent(slug: string): ReactNode {
       return <ScoringScaleSectionDemo />;
     case "scoring-scale-wide":
       return <ScoringScaleWide />;
+    case "scoring-table":
+      return <ScoringTableDemo />;
     case "scoring-wide":
       return <ScoringWide />;
     case "status-dropdown":

@@ -3,12 +3,15 @@ import { Button, Stack, useTheme } from "@mui/material";
 import type { ReactNode } from "react";
 
 import MetaTag from "./MetaTag.js";
+import { formatScenarioConfidencePercent } from "../utils/scenarioConfidence.js";
 
 export type ScoringRationaleHeaderProps = {
   /** Scenario display name (page title). */
   scenarioName: string;
   /** Shown below the title when set (e.g. scenario primary id). */
   scenarioId?: string;
+  /** AI scoring confidence (1–100); shown as a percentage next to scenario metadata. */
+  confidencePercent?: number;
   breadcrumbs: ReactNode;
   onBack: () => void;
   backButtonAriaLabel: string;
@@ -18,6 +21,7 @@ export type ScoringRationaleHeaderProps = {
 export default function ScoringRationaleHeader({
   scenarioName,
   scenarioId,
+  confidencePercent,
   breadcrumbs,
   onBack,
   backButtonAriaLabel,
@@ -49,7 +53,7 @@ export default function ScoringRationaleHeader({
           },
         }}
       />
-      {scenarioId ? (
+      {scenarioId != null || confidencePercent != null ? (
         <Stack
           direction="row"
           component="div"
@@ -61,7 +65,13 @@ export default function ScoringRationaleHeader({
             paddingInlineStart: metaRowInset,
           }}
         >
-          <MetaTag label="Scenario ID" value={scenarioId} />
+          {scenarioId ? <MetaTag label="Scenario ID" value={scenarioId} /> : null}
+          {confidencePercent != null ? (
+            <MetaTag
+              label="Confidence"
+              value={formatScenarioConfidencePercent(confidencePercent)}
+            />
+          ) : null}
         </Stack>
       ) : null}
     </Stack>

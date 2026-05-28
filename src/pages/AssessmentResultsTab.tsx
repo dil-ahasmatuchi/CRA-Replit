@@ -15,7 +15,7 @@ import FilterSideSheet from "../components/FilterSideSheet.js";
 import MitigationPlanPageSideSheet from "../components/MitigationPlanPageSideSheet.js";
 import ResultsHero from "../components/ResultsHero.js";
 import ScoringInfoCardRead from "../components/ScoringInfoCardRead.js";
-import { ResultsRiskChip, ResultsTreeData } from "../components/ResultsTreeData.js";
+import { ResultsRiskChip, ResultsTable } from "../components/ResultsTable.js";
 import type { MatrixSelectionPayload } from "../components/RisksMatrix.js";
 import { useSavedChangesToast } from "../context/SavedChangesToastContext.js";
 import { Box, Link, Stack } from "@mui/material";
@@ -47,6 +47,7 @@ import {
   type CraScoringTypeChoice,
 } from "./craNewAssessmentDraftStorage.js";
 import type { CraScenarioScoreAggregationMethod } from "../data/craAssessmentDraftTypes.js";
+import { buildHeatmapCyberRisksForResultsTab } from "../utils/assessmentResultsHeatmapRisks.js";
 import { filterAssessmentCyberResultsByMatrixFilter } from "../utils/assessmentResultsMatrixFilter.js";
 import type { CyberRiskMatrixTableFilter } from "../utils/cyberRiskTableRows.js";
 
@@ -240,6 +241,7 @@ export default function AssessmentResultsTab({
       scenarioCatalogScoresReleased,
       scenarioManuallyRevealedScoreIds,
       scenarioNotApplicableIds,
+      scenarioScoreAggregationMethod: aggregationMethod,
     }),
     [
       assessmentPhase,
@@ -248,6 +250,7 @@ export default function AssessmentResultsTab({
       scenarioCatalogScoresReleased,
       scenarioManuallyRevealedScoreIds,
       scenarioNotApplicableIds,
+      aggregationMethod,
     ],
   );
 
@@ -288,6 +291,7 @@ export default function AssessmentResultsTab({
       excludedScopeCyberRiskIds,
       excludedScopeScenarioIds,
       scenarioScopeAssessmentId,
+      aggregationMethod,
     );
     const risks = assessmentScopedCyberRisks(includedAssetIds, excludedScopeCyberRiskIds);
     const risksById = new Map(risks.map((r) => [r.id, r] as const));
@@ -297,6 +301,7 @@ export default function AssessmentResultsTab({
     excludedScopeCyberRiskIds,
     excludedScopeScenarioIds,
     scenarioScopeAssessmentId,
+    aggregationMethod,
     scenariosByRiskId,
     catalogMaskParams,
   ]);
@@ -399,9 +404,14 @@ export default function AssessmentResultsTab({
     [includedAssetIds, excludedScopeCyberRiskIds],
   );
 
-  const cyberRiskById = useMemo(
-    () => new Map(scopedCyberRisks.map((r) => [r.id, r] as const)),
-    [scopedCyberRisks],
+  const heatmapCyberRisks = useMemo(
+    () => buildHeatmapCyberRisksForResultsTab(scopedCyberRisks, cyberResultRows),
+    [scopedCyberRisks, cyberResultRows],
+  );
+
+  const cyberRiskByIdForMatrix = useMemo(
+    () => new Map(heatmapCyberRisks.map((r) => [r.id, r] as const)),
+    [heatmapCyberRisks],
   );
 
   const handleMatrixSelectionForResultsTable = useCallback((p: MatrixSelectionPayload) => {
@@ -424,9 +434,9 @@ export default function AssessmentResultsTab({
     return filterAssessmentCyberResultsByMatrixFilter(
       afterSheet,
       heatmapMatrixFilter,
-      cyberRiskById,
+      cyberRiskByIdForMatrix,
     );
-  }, [cyberResultRows, appliedFilterResults, heatmapMatrixFilter, cyberRiskById]);
+  }, [cyberResultRows, appliedFilterResults, heatmapMatrixFilter, cyberRiskByIdForMatrix]);
 
   if (includedAssetIds.size === 0) {
     return (
@@ -443,7 +453,7 @@ export default function AssessmentResultsTab({
         aggregationMethodRadio={{ name: "cra-results-tab-aggregation" }}
       />
       <ResultsHero
-        scopedRisks={scopedCyberRisks}
+        scopedRisks={heatmapCyberRisks}
         assetResultRows={assetResultRows}
         scoringType={scoringType}
         onMatrixSelection={handleMatrixSelectionForResultsTable}
@@ -460,7 +470,7 @@ export default function AssessmentResultsTab({
         onCollapse={() => setCyberSectionExpanded(false)}
       >
         {cyberSectionExpanded ? (
-          <ResultsTreeData
+          <ResultsTable
             rows={filteredCyberResultRows}
             onOpenMitigationPlan={handleOpenMitigationPlan}
             onScenarioRowClick={onScenarioRowClick}

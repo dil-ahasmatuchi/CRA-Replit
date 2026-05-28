@@ -471,6 +471,7 @@ export default function ScoringRationalePage() {
         <ScoringRationaleHeader
           scenarioName={scenario.name.trim() || scenario.id}
           scenarioId={scenario.id}
+          confidencePercent={scenario.confidencePercent}
           breadcrumbs={breadcrumbs}
           onBack={goBackToScoring}
           backButtonAriaLabel="Back to scoring"

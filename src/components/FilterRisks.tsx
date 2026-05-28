@@ -29,7 +29,7 @@ export type FilterRisksProps = {
   boundedOwnerIds?: string[];
   /** When set, Assets autocomplete lists only these asset ids (plus any currently selected in `value`). */
   boundedAssetIds?: string[];
-  /** When set, Cyber risk score multiselect lists only these labels in catalog order (plus any currently selected). */
+  /** When set, Residual cyber risk score multiselect lists only these labels in catalog order (plus any currently selected). */
   boundedScoreLabels?: FivePointScaleLabel[];
 };
 
@@ -210,7 +210,7 @@ export default function FilterRisks({
       </FormControl>
 
       <MultiSelectField
-        label="Cyber risk score"
+        label="Residual cyber risk score"
         value={value.scoreLabels}
         onChange={(next) => onChange({ ...value, scoreLabels: next as FivePointScaleLabel[] })}
         options={scoreFieldOptions}

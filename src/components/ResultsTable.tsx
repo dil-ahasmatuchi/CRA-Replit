@@ -80,7 +80,7 @@ function cyberResultsToTreeRows(rows: AssessmentCyberResultsRow[]): CyberResults
   }));
 }
 
-export type ResultsTreeDataProps = {
+export type ResultsTableProps = {
   rows: AssessmentCyberResultsRow[];
   onOpenMitigationPlan: (row: CyberResultsRow) => void;
   /** When set, scenario rows are clickable (e.g. approved assessment → read-only rationale). */
@@ -96,15 +96,15 @@ export type ResultsTreeDataProps = {
   onClearFilters?: () => void;
 };
 
-/** Tree DataGrid for cyber risk + scenario rows on the assessment Results tab. */
-export function ResultsTreeData({
+/** Results table (tree DataGrid) for cyber risk + scenario rows on the assessment Results tab. */
+export function ResultsTable({
   rows,
   onOpenMitigationPlan,
   onScenarioRowClick,
   onOpenFilters,
   filterCriteriaCount = 0,
   onClearFilters,
-}: ResultsTreeDataProps) {
+}: ResultsTableProps) {
   const treeRows = useMemo(() => cyberResultsToTreeRows(rows), [rows]);
 
   const groupingColDef = useMemo(

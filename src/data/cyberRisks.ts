@@ -24,8 +24,8 @@ const RESIDUAL_LIKELIHOOD_ALPHA = 0.35;
  * best-matching risk so the library stays fully covered.
  */
 const RISK_SEEDS: { name: string; status: CyberRiskStatus }[] = [
-  { name: "Ransomware and extortion disrupting critical operations and data availability", status: "Mitigation" },
-  { name: "Phishing and impersonation compromising workforce and customer credentials", status: "Monitoring" },
+  { name: "Ransomware and destructive malware across endpoint fleet", status: "Mitigation" },
+  { name: "Social engineering, phishing, and insider threat", status: "Monitoring" },
   { name: "Denial-of-service events impairing service availability and revenue", status: "Assessment" },
   { name: "Insider actions or negligence leading to unauthorized data exfiltration", status: "Mitigation" },
   { name: "Business email compromise and payment fraud against the organization", status: "Monitoring" },
@@ -33,7 +33,7 @@ const RISK_SEEDS: { name: string; status: CyberRiskStatus }[] = [
   { name: "Supply chain compromise through vendors, software, or managed services", status: "Identification" },
   { name: "Application-layer attacks compromising confidentiality and integrity of data", status: "Mitigation" },
   { name: "Malware infection, illicit cryptomining, and lateral movement across systems", status: "Monitoring" },
-  { name: "Account takeover enabling unauthorized access to systems and privileged functions", status: "Assessment" },
+  { name: "Unauthorized privileged access and credential compromise", status: "Assessment" },
   { name: "Cloud or SaaS dependency failures causing extended operational outage", status: "Identification" },
   { name: "Sophisticated and AI-assisted cyber threats maintaining covert, long-term access", status: "Mitigation" },
   { name: "Exploitation of unpatched or zero-day vulnerabilities before remediations deploy", status: "Assessment" },
@@ -199,6 +199,36 @@ function mitigationPlanIdsForRiskIndex(i: number): string[] {
   return [padId("MP", 1 + (i % 15)), padId("MP", 1 + ((i + 7) % 15))];
 }
 
+/** Demo library scores for specific seed titles (after `applyResidualCyberRiskScores`). */
+const LIBRARY_CYBER_RISK_SCORE_PATCHES: Record<
+  string,
+  { cyberRiskScore: number; residualCyberRiskScore: number }
+> = {
+  "Unauthorized privileged access and credential compromise": {
+    cyberRiskScore: 80,
+    residualCyberRiskScore: 60,
+  },
+  "Ransomware and destructive malware across endpoint fleet": {
+    cyberRiskScore: 125,
+    residualCyberRiskScore: 45,
+  },
+  "Social engineering, phishing, and insider threat": {
+    cyberRiskScore: 125,
+    residualCyberRiskScore: 125,
+  },
+};
+
+function applyAuthoritativeLibraryCyberRiskScorePatches(risks: MockCyberRisk[]): void {
+  for (const r of risks) {
+    const patch = LIBRARY_CYBER_RISK_SCORE_PATCHES[r.name];
+    if (!patch) continue;
+    r.cyberRiskScore = patch.cyberRiskScore;
+    r.cyberRiskScoreLabel = getCyberRiskScoreLabel(patch.cyberRiskScore);
+    r.residualCyberRiskScore = patch.residualCyberRiskScore;
+    r.residualCyberRiskScoreLabel = getCyberRiskScoreLabel(patch.residualCyberRiskScore);
+  }
+}
+
 function buildCyberRisks(): MockCyberRisk[] {
   clearCyberRiskBackReferencesFromCatalog();
 
@@ -284,6 +314,8 @@ function buildCyberRisks(): MockCyberRisk[] {
     applyResidualCyberRiskScores(r);
   }
 
+  applyAuthoritativeLibraryCyberRiskScorePatches(out);
+
   return out;
 }
 
@@ -298,6 +330,49 @@ function rebuildCyberRiskIndex(): void {
   }
 }
 
+/** After {@link applyResidualCyberRiskScores} on catalog load — demo residual scores (id + name guard). */
+const MOCK_RESIDUAL_SCORE_PATCHES_AFTER_PERSISTENCE: readonly {
+  id: string;
+  name: string;
+  residualCyberRiskScore: number;
+}[] = [
+  {
+    id: "CR-001",
+    name: "Unauthorized privileged access and credential compromise",
+    residualCyberRiskScore: 60,
+  },
+  {
+    id: "CR-002",
+    name: "Ransomware and destructive malware across endpoint fleet",
+    residualCyberRiskScore: 45,
+  },
+  {
+    id: "CR-010",
+    name: "Social engineering, phishing, and insider threat",
+    residualCyberRiskScore: 125,
+  },
+];
+
+function alignResidualLikelihoodToResidualScoreProduct(r: MockCyberRisk, product: number): void {
+  const imp = r.impact;
+  if (typeof imp !== "number" || imp < 1 || imp > 5 || product % imp !== 0) return;
+  const rl = product / imp;
+  if (rl >= 1 && rl <= 25) {
+    r.residualLikelihood = rl;
+    r.residualLikelihoodLabel = getLikelihoodLabel(rl);
+  }
+}
+
+function applyMockResidualOverridesAfterPersistenceLoad(): void {
+  for (const patch of MOCK_RESIDUAL_SCORE_PATCHES_AFTER_PERSISTENCE) {
+    const r = riskById.get(patch.id);
+    if (!r || r.name !== patch.name) continue;
+    r.residualCyberRiskScore = patch.residualCyberRiskScore;
+    r.residualCyberRiskScoreLabel = getCyberRiskScoreLabel(patch.residualCyberRiskScore);
+    alignResidualLikelihoodToResidualScoreProduct(r, patch.residualCyberRiskScore);
+  }
+}
+
 export function replaceCyberRisksFromPersistence(next: MockCyberRisk[]): void {
   cyberRisks.length = 0;
   cyberRisks.push(...next);
@@ -307,8 +382,11 @@ export function replaceCyberRisksFromPersistence(next: MockCyberRisk[]): void {
   }
   relinkCyberRisksToThreatsVulnsAssets();
   for (const r of cyberRisks) {
-    applyResidualCyberRiskScores(r);
+    if (!r.residualScoresFromAssessment) {
+      applyResidualCyberRiskScores(r);
+    }
   }
+  applyMockResidualOverridesAfterPersistenceLoad();
   syncIndirectLinksFromCyberRisks();
 }
 

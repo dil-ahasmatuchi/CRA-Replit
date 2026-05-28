@@ -23,6 +23,19 @@ export function normalizeAiScoringPhaseForHydrate(raw: unknown): AiScoringPhase 
 
 export type CraScoringTypeChoice = "inherent" | "residual";
 
+/**
+ * Maps persisted catalog `MockCyberRiskAssessment.assessmentType` (e.g. `"Inherent scoring"`,
+ * `"Residual scoring"`) to the Scoring / Results tab basis. Unknown values default to residual.
+ */
+export function craScoringTypeChoiceFromCatalogAssessmentType(
+  assessmentType: string,
+): CraScoringTypeChoice {
+  const t = assessmentType.trim().toLowerCase();
+  if (t.startsWith("inherent")) return "inherent";
+  if (t.startsWith("residual")) return "residual";
+  return "residual";
+}
+
 /** How parent cyber-risk rows aggregate scenario scores in the Scoring tab. */
 export type CraScenarioScoreAggregationMethod = "highest" | "average";
 

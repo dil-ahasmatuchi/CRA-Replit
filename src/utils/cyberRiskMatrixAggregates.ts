@@ -75,7 +75,9 @@ export function buildCyberRiskHeatmapAggregates(
   };
 
   for (const risk of risks) {
-    const colIdx = risk.impact - 1;
+    const impactForCell =
+      basis === "residual" && risk.residualImpact != null ? risk.residualImpact : risk.impact;
+    const colIdx = impactForCell - 1;
     const likelihoodLabel: FivePointScaleLabel | undefined =
       basis === "residual" ? risk.residualLikelihoodLabel : risk.likelihoodLabel;
     const rowIdx =

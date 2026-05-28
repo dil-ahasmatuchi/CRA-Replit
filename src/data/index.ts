@@ -100,6 +100,8 @@ export {
   deleteScenarioOverridesForIds,
 } from "./scenarios.js";
 export { syncAssessmentOwnedScenarios } from "./assessmentScenarioSync.js";
+export { applyApprovedAssessmentCyberRiskWriteback } from "./applyApprovedAssessmentCyberRiskWriteback.js";
+export type { ApplyApprovedAssessmentCyberRiskWritebackArgs } from "./applyApprovedAssessmentCyberRiskWriteback.js";
 export {
   riskAssessments,
   getRiskAssessmentById,

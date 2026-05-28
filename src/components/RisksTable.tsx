@@ -132,7 +132,7 @@ export default function RisksTable({
     },
     {
       field: "cyberRiskScore",
-      headerName: "Cyber risk score",
+      headerName: "Residual cyber risk score",
       width: 170,
       renderCell: (params: GridRenderCellParams<CyberRiskRow>) => (
         <CyberRiskScoreCell

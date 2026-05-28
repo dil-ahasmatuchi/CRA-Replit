@@ -14,6 +14,9 @@ export type NewCyberRiskAssessmentMethodSectionProps = {
   assessmentTypeSlot: ReactNode;
   /** When true, instructions editor and attachments are not editable. */
   readOnly?: boolean;
+  /** When set with {@link onInstructionsChange}, controls the instructions field from the parent (catalog-backed CRA). */
+  instructionsValue?: string;
+  onInstructionsChange?: (value: string) => void;
 };
 
 /**
@@ -22,9 +25,15 @@ export type NewCyberRiskAssessmentMethodSectionProps = {
 export default function NewCyberRiskAssessmentMethodSection({
   assessmentTypeSlot,
   readOnly = false,
+  instructionsValue,
+  onInstructionsChange,
 }: NewCyberRiskAssessmentMethodSectionProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [instructions, setInstructions] = useState("");
+  const [internalInstructions, setInternalInstructions] = useState("");
+  const controlled =
+    instructionsValue !== undefined && typeof onInstructionsChange === "function";
+  const instructions = controlled ? instructionsValue : internalInstructions;
+  const setInstructions = controlled ? onInstructionsChange : setInternalInstructions;
 
   const openFilePicker = useCallback(() => {
     fileInputRef.current?.click();

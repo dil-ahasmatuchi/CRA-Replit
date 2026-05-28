@@ -21,7 +21,10 @@ import AssessmentResultsTab from "./AssessmentResultsTab.js";
 import AssessmentScopeTab, {
   type ScopeSubView,
 } from "./AssessmentScopeTab.js";
-import { normalizeAiScoringPhaseForHydrate } from "../data/craAssessmentDraftTypes.js";
+import {
+  craScoringTypeChoiceFromCatalogAssessmentType,
+  normalizeAiScoringPhaseForHydrate,
+} from "../data/craAssessmentDraftTypes.js";
 import {
   assessmentPhaseToAssessmentStatus,
   assessmentStatusToPhase,
@@ -49,6 +52,7 @@ import {
   updateRiskAssessment,
 } from "../data/riskAssessments.js";
 import { syncAssessmentOwnedScenarios } from "../data/assessmentScenarioSync.js";
+import { applyApprovedAssessmentCyberRiskWriteback } from "../data/applyApprovedAssessmentCyberRiskWriteback.js";
 import AssessmentDetailHeader from "../components/AssessmentDetailHeader.js";
 import {
   useSavedChangesToast,
@@ -246,6 +250,15 @@ export default function AssessmentDetailsTab() {
   useEffect(() => {
     assessmentPhaseRef.current = assessmentPhase;
   }, [assessmentPhase]);
+
+  useEffect(() => {
+    if (!routeAssessmentId) {
+      setAssessmentInstructions("");
+      return;
+    }
+    const row = getRiskAssessmentById(routeAssessmentId);
+    setAssessmentInstructions(row?.instructions ?? "");
+  }, [routeAssessmentId]);
   const [name, setName] = useState(() => {
     if (initialDraft) return initialDraft.name;
     if (mockFromRoute) return mockFromRoute.name;
@@ -264,6 +277,10 @@ export default function AssessmentDetailsTab() {
   const [dueDate, setDueDate] = useState(() => {
     if (initialDraft) return initialDraft.dueDate;
     if (mockFromRoute) return mockFromRoute.dueDate;
+    return "";
+  });
+  const [assessmentInstructions, setAssessmentInstructions] = useState(() => {
+    if (mockFromRoute) return mockFromRoute.instructions ?? "";
     return "";
   });
   const [ownerIds, setOwnerIds] = useState<string[]>(() => {
@@ -330,6 +347,9 @@ export default function AssessmentDetailsTab() {
 
   const [scoringType, setScoringType] = useState<CraScoringTypeChoice>(() => {
     if (initialDraft) return initialDraft.scoringType;
+    if (mockFromRoute) {
+      return craScoringTypeChoiceFromCatalogAssessmentType(mockFromRoute.assessmentType);
+    }
     return "residual";
   });
 
@@ -814,12 +834,34 @@ export default function AssessmentDetailsTab() {
     setScenarioScoreAggregationMethod("highest");
   }, [includedScopeAssetIdsForWorkflow]);
 
-  const handleAssessmentPhaseChange = useCallback((phase: AssessmentPhase) => {
-    setAssessmentPhase(phase);
-    if (phase === "scoping") {
-      setScenarioScoreAggregationMethod("highest");
-    }
-  }, []);
+  const handleAssessmentPhaseChange = useCallback(
+    (phase: AssessmentPhase) => {
+      if (phase === "assessmentApproved") {
+        applyApprovedAssessmentCyberRiskWriteback({
+          includedAssetIds: includedScopeAssetIds,
+          excludedScopeCyberRiskIds,
+          excludedScopeScenarioIds,
+          scenarioNotApplicableIds,
+          scenarioScopeAssessmentId,
+          scoringType,
+          scenarioScoreAggregationMethod,
+        });
+      }
+      setAssessmentPhase(phase);
+      if (phase === "scoping") {
+        setScenarioScoreAggregationMethod("highest");
+      }
+    },
+    [
+      includedScopeAssetIds,
+      excludedScopeCyberRiskIds,
+      excludedScopeScenarioIds,
+      scenarioNotApplicableIds,
+      scenarioScopeAssessmentId,
+      scoringType,
+      scenarioScoreAggregationMethod,
+    ],
+  );
 
   const showAiScoringAction = useMemo(() => {
     if (
@@ -900,6 +942,7 @@ export default function AssessmentDetailsTab() {
           dueDate,
           startDate: row.startDate,
           aiScoringPhase,
+          instructions: assessmentInstructions,
           ...rollup,
         });
       }
@@ -947,6 +990,7 @@ export default function AssessmentDetailsTab() {
     excludedScopeControlIds,
     excludedScopeScenarioIds,
     aiScoringPhase,
+    assessmentInstructions,
     scoringType,
     scenarioScoreAggregationMethod,
     scenarioNotApplicableIds,
@@ -1252,6 +1296,8 @@ export default function AssessmentDetailsTab() {
 
             <NewCyberRiskAssessmentMethodSection
               readOnly={isApproved}
+              instructionsValue={routeAssessmentId ? assessmentInstructions : undefined}
+              onInstructionsChange={routeAssessmentId ? setAssessmentInstructions : undefined}
               assessmentTypeSlot={
                 <RadioButtonArray
                   label="Assessment type"
