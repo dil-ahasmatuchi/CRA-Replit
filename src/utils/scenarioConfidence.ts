@@ -23,3 +23,13 @@ export function isValidConfidencePercent(value: unknown): value is number {
 export function formatScenarioConfidencePercent(n: number): string {
   return `${Math.round(n)}%`;
 }
+
+/** Deterministic mock AI confidence for a scoring metric field (1–100), stable per seed key. */
+export function generateMetricFieldConfidencePercent(seedKey: string): number {
+  const seed = hashScenarioId(`metric:${seedKey}`);
+  return Math.floor(seededRandom(seed) * 100) + 1;
+}
+
+export function formatMetricConfidenceHelpText(percent: number): string {
+  return `${formatScenarioConfidencePercent(percent)} confidence`;
+}

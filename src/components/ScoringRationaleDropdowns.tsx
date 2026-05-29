@@ -32,7 +32,7 @@ export type ScoringRationaleDropdownsProps = {
 };
 
 /**
- * Surface-variant container with a row of scoring metric dropdowns, matching the
+ * Surface-subtle container with a row of scoring metric dropdowns, matching the
  * scenario scoring rationale layout in {@link ScoringRationalePage}.
  */
 export default function ScoringRationaleDropdowns({
@@ -73,7 +73,7 @@ export default function ScoringRationaleDropdowns({
         boxSizing: "border-box",
         p: 3,
         borderRadius: t.semantic.radius.lg.value,
-        bgcolor: t.semantic.color.surface.variant.value,
+        bgcolor: t.semantic.color.surface.subtle.value,
         border: "none",
         borderImage: "none",
       })}

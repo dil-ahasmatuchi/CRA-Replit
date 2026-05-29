@@ -201,7 +201,7 @@ export default function ScoringInfoCard({
       variant="body1"
       sx={({ tokens: t }) => ({
         m: 0,
-        width: "100%",
+        width: isProcessing ? "fit-content" : "100%",
         ...titleTypographySx({ tokens: t }),
         color: t.semantic.color.type.default.value,
       })}
@@ -245,13 +245,14 @@ export default function ScoringInfoCard({
           })}
         >
           <Stack
+            direction={isProcessing ? "row" : "column"}
+            alignItems={isProcessing ? "center" : "flex-start"}
             sx={({ tokens: t }) => ({
               flex: "1 1 0",
               minWidth: 0,
               gap: isProcessing
                 ? t.core.spacing["2"].value
                 : t.core.spacing["0_5"].value,
-              alignItems: "flex-start",
             })}
           >
             {isComplete ? completeTitleRow : defaultTitleRow}

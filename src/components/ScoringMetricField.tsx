@@ -1,13 +1,20 @@
-import { useCallback } from "react";
+import { useCallback, useId, useMemo } from "react";
 import {
   Box,
   FormControl,
+  FormHelperText,
   MenuItem,
   Select,
   type SelectChangeEvent,
   Stack,
   Typography,
 } from "@mui/material";
+
+import {
+  formatMetricConfidenceHelpText,
+  generateMetricFieldConfidencePercent,
+  isValidConfidencePercent,
+} from "../utils/scenarioConfidence.js";
 
 import {
   formatBandRangeEnDash,
@@ -104,12 +111,27 @@ export default function ScoringMetricField({
   value,
   onChange,
   options = SCORE_OPTIONS,
+  confidencePercent,
 }: {
   label: string;
   value: ScoreValue;
   onChange: (next: ScoreValue) => void;
   options?: NonNullable<ScoreValue>[];
+  /** AI confidence for this metric (1–100). Mocked per label when omitted. */
+  confidencePercent?: number;
 }) {
+  const confidenceHelperId = useId();
+
+  const resolvedConfidencePercent = useMemo(() => {
+    if (isValidConfidencePercent(confidencePercent)) return confidencePercent;
+    return generateMetricFieldConfidencePercent(label);
+  }, [confidencePercent, label]);
+
+  const showConfidenceHelp = value != null;
+  const confidenceHelpText = showConfidenceHelp
+    ? formatMetricConfidenceHelpText(resolvedConfidencePercent)
+    : null;
+
   const handleChange = useCallback(
     (e: SelectChangeEvent<string>) => {
       const selected = options.find((o) => o.numeric === e.target.value) ?? null;
@@ -139,7 +161,10 @@ export default function ScoringMetricField({
           displayEmpty
           value={value?.numeric ?? ""}
           onChange={handleChange}
-          inputProps={{ "aria-label": label }}
+          inputProps={{
+            "aria-label": label,
+            ...(showConfidenceHelp ? { "aria-describedby": confidenceHelperId } : {}),
+          }}
           renderValue={(selected) => {
             const opt = options.find((o) => o.numeric === selected);
             if (!opt) {
@@ -176,6 +201,22 @@ export default function ScoringMetricField({
             </MenuItem>
           ))}
         </Select>
+        {confidenceHelpText ? (
+          <FormHelperText
+            id={confidenceHelperId}
+            sx={({ tokens: t }) => ({
+              m: 0,
+              mt: 0.5,
+              pl: 0,
+              fontSize: t.semantic.font.text.md.fontSize.value,
+              lineHeight: t.semantic.font.text.md.lineHeight.value,
+              letterSpacing: t.semantic.font.text.md.letterSpacing.value,
+              color: t.semantic.color.type.default.value,
+            })}
+          >
+            {confidenceHelpText}
+          </FormHelperText>
+        ) : null}
       </FormControl>
     </Stack>
   );

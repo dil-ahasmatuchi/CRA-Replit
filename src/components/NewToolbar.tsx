@@ -206,7 +206,8 @@ const standaloneToolbarSx = {
   display: "flex",
   alignItems: "center",
   gap: 1,
-  px: 1,
+  pl: 0,
+  pr: 1,
   flexWrap: "wrap" as const,
 };
 

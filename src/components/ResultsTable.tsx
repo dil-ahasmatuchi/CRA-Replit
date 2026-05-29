@@ -237,7 +237,7 @@ export function ResultsTable({
   }
 
   return (
-    <Stack gap={0} sx={{ width: "100%" }}>
+    <Stack gap={2} sx={{ width: "100%" }}>
       <NewToolbarStandalone
         searchValue={quickSearch}
         onSearchChange={setQuickSearch}

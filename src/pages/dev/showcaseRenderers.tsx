@@ -1,6 +1,6 @@
 // @ts-nocheck — dev showcase; keep route working while catalog types drift from Atlas bundle.
 import { useMemo, useState, type ReactNode } from "react";
-import { Box, MenuItem, Stack, Typography } from "@mui/material";
+import { Box, FormControl, MenuItem, Select, Stack, Typography } from "@mui/material";
 
 import AIBanner from "../../components/AIBanner.js";
 import AICard from "../../components/AICard.js";
@@ -303,6 +303,60 @@ function StatusDropdownDemo() {
       resolveDotFill={() => "#ccc"}
       renderChip={({ value: v }) => <Typography variant="textSm">{v}</Typography>}
     />
+  );
+}
+
+function ScoringInfoCardDemo() {
+  type CardState = "default" | "loading" | "completed" | "no-header";
+  const [state, setState] = useState<CardState>("default");
+
+  const getPropsForState = () => {
+    switch (state) {
+      case "default":
+        return {
+          title: "AI scoring",
+          description: "Our AI agent will automatically score all the scenarios.",
+          actionLabel: "Start AI scoring",
+          onAction: () => {},
+          actionLoading: false,
+        };
+      case "loading":
+        return {
+          title: "AI scoring",
+          actionLoading: true,
+          processingScenariosTotal: 45,
+        };
+      case "completed":
+        return {
+          title: "AI scoring completed",
+          description: null,
+        };
+      case "no-header":
+        return {
+          omitHeader: true,
+        };
+    }
+  };
+
+  return (
+    <Stack spacing={2} width="100%">
+      <FormControl size="small" sx={{ maxWidth: 300 }}>
+        <Select
+          value={state}
+          onChange={(e) => setState(e.target.value as CardState)}
+        >
+          <MenuItem value="default">Default (with button)</MenuItem>
+          <MenuItem value="loading">Loading (in progress)</MenuItem>
+          <MenuItem value="completed">Completed</MenuItem>
+          <MenuItem value="no-header">No header (info only)</MenuItem>
+        </Select>
+      </FormControl>
+
+      <ScoringInfoCard
+        {...getPropsForState()}
+        aggregationMethodRadio={{ name: "showcase-scoring-info-card-aggregation" }}
+      />
+    </Stack>
   );
 }
 
@@ -646,12 +700,7 @@ export function renderShowcaseComponent(slug: string): ReactNode {
         </Box>
       );
     case "scoring-info-card":
-      return (
-        <ScoringInfoCard
-          onAction={() => {}}
-          aggregationMethodRadio={{ name: "showcase-scoring-info-card-aggregation" }}
-        />
-      );
+      return <ScoringInfoCardDemo />;
     case "scoring-info-card-read":
       return (
         <ScoringInfoCardRead
@@ -663,10 +712,11 @@ export function renderShowcaseComponent(slug: string): ReactNode {
     case "scoring-metric-field":
       return (
         <ScoringMetricField
-          label="Impact"
-          value={DEMO_SCORES.impact}
+          label="Threat severity"
+          value={DEMO_SCORES.threat}
           onChange={() => {}}
           options={SCORE_OPTIONS}
+          confidencePercent={32}
         />
       );
     case "scoring-rationale-dropdowns":
