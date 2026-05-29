@@ -118,6 +118,11 @@ export default function AssessmentScoringTab({
     ],
   );
 
+  const processingScenariosTotal = useMemo(
+    () => scoringRows.filter((row) => row.kind === "scenario").length,
+    [scoringRows],
+  );
+
   const catalogMaskContext: ScenarioCatalogMaskContext = useMemo(
     () => ({
       assessmentPhase,
@@ -221,11 +226,15 @@ export default function AssessmentScoringTab({
       <ScoringInfoCard
         omitHeader={!showAiScoringAction}
         title={aiScoringPhase === "complete" ? "AI scoring completed" : "AI scoring"}
-        description={aiScoringPhase === "complete" ? null : undefined}
-        onAction={
-          showAiScoringAction && aiScoringPhase !== "complete" ? onAiScoringClick : undefined
+        description={
+          aiScoringPhase === "complete"
+            ? "Scoring and the rationales were generated. Review the results and adjust as needed."
+            : undefined
         }
+        actionLabel={aiScoringPhase === "complete" ? "Restart AI scoring" : undefined}
+        onAction={showAiScoringAction ? onAiScoringClick : undefined}
         actionLoading={aiScoringPhase === "processing"}
+        processingScenariosTotal={processingScenariosTotal}
         aggregationMethodRadio={{
           name: "cra-scoring-tab-aggregation",
           value: aggregationMethod,

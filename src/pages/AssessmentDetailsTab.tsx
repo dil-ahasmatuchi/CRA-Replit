@@ -1067,7 +1067,7 @@ export default function AssessmentDetailsTab() {
       setAssessmentPhase("inProgress");
     }
     setAiScoringPhase((prev) => {
-      if (prev !== "idle") return prev;
+      if (prev === "processing") return prev;
       if (aiScoringTimerRef.current) {
         clearTimeout(aiScoringTimerRef.current);
       }
@@ -1075,7 +1075,7 @@ export default function AssessmentDetailsTab() {
         aiScoringTimerRef.current = null;
         setScenarioCatalogScoresReleased(true);
         setAiScoringPhase("complete");
-      }, 3000);
+      }, 7000);
       return "processing";
     });
   }, [assessmentPhase, includedScopeAssetIds, excludedScopeCyberRiskIds, excludedScopeScenarioIds, scenarioScopeAssessmentId]);

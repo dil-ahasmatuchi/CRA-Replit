@@ -59,6 +59,8 @@ import ScoringFormulasWide from "../../components/ScoringFormulasWide.js";
 import ScoringInfo from "../../components/ScoringInfo.js";
 import ScoringInfoCard from "../../components/ScoringInfoCard.js";
 import ScoringInfoCardRead from "../../components/ScoringInfoCardRead.js";
+import { ScoringLoading } from "../../components/ScoringLoading.js";
+import { ScoringStatusBar } from "../../components/ScoringStatusBar.js";
 import { ScoringTable, buildScoringTableRows } from "../../components/ScoringTable.js";
 import ScoringMetricField from "../../components/ScoringMetricField.js";
 import ScoringRationaleDropdowns from "../../components/ScoringRationaleDropdowns.js";
@@ -348,7 +350,7 @@ function ResultsTableDemo() {
   );
   if (!aid) return <Typography>No assets in mock data.</Typography>;
   return (
-    <Box sx={{ height: 420, width: "100%" }}>
+    <Box sx={{ width: "100%", overflow: "auto" }}>
       <ResultsTable
         rows={cyberRows}
         onOpenMitigationPlan={() => {}}
@@ -378,6 +380,37 @@ function ScoringTableDemo() {
         onRemoveCyberRiskFromAssessment={() => {}}
         onRemoveScenarioFromAssessment={() => {}}
       />
+    </Box>
+  );
+}
+
+function ScoringLoadingDemo() {
+  return (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "center", py: 6 }}>
+      <ScoringStatusBar
+        scenariosComplete={0}
+        scenariosTotal={5}
+        elapsedTime="01 min"
+        animateScenariosProgress
+      />
+
+      <Box sx={{ textAlign: "center" }}>
+        <Typography
+          variant="caption"
+          sx={{
+            mb: 2,
+            display: "block",
+            fontSize: 12,
+            letterSpacing: "0.06em",
+            textTransform: "uppercase",
+            color: "rgb(160,162,165)",
+            fontWeight: 600,
+          }}
+        >
+          Standalone loader (small)
+        </Typography>
+        <ScoringLoading />
+      </Box>
     </Box>
   );
 }
@@ -625,6 +658,8 @@ export function renderShowcaseComponent(slug: string): ReactNode {
           aggregationMethodRadio={{ name: "showcase-scoring-info-card-read-aggregation" }}
         />
       );
+    case "scoring-loading":
+      return <ScoringLoadingDemo />;
     case "scoring-metric-field":
       return (
         <ScoringMetricField

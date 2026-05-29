@@ -16,10 +16,25 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import type { Theme } from "@mui/material/styles";
 
-import ExpandDownIcon from "@diligentcorp/atlas-react-bundle/icons/ExpandDown";
 import MoreIcon from "@diligentcorp/atlas-react-bundle/icons/More";
+
+import {
+  ASSESSMENT_CONFIDENCE_MIN_PX,
+  ASSESSMENT_CYBER_RISK_SCORE_MIN_PX,
+  ASSESSMENT_IMPACT_MIN_PX,
+  ASSESSMENT_LIKELIHOOD_MIN_PX,
+  ASSESSMENT_THREAT_MIN_PX,
+  ASSESSMENT_VULNERABILITY_MIN_PX,
+  AssessmentTreeNameCell,
+  assessmentMetricTdSx,
+  assessmentMetricThSx,
+  assessmentTreeNameBodyCellSx,
+  assessmentTreeNameHeadCellSx,
+  assessmentTreeRowBodyCellBgSx,
+  getConnectorType,
+  scoreTableCellContentSx,
+} from "./assessmentTreeTableUi.js";
 
 import { ragDataVizColor, type RagDataVizKey } from "../data/ragDataVisualization.js";
 import {
@@ -65,97 +80,21 @@ export type ScoringTableRow = {
   confidencePercent: number | null;
 };
 
-/** Name column is fixed width (sticky first column). */
-const SCORING_NAME_COL_WIDTH_PX = 400;
-
 /** Actions column is fixed width (sticky last column). */
 const SCORING_ACTIONS_COL_WIDTH_PX = 48;
 
-const SCORING_IMPACT_MIN_PX = 80;
-const SCORING_THREAT_MIN_PX = 132;
-const SCORING_VULNERABILITY_MIN_PX = 164;
-const SCORING_LIKELIHOOD_MIN_PX = 110;
-const SCORING_CYBER_RISK_SCORE_MIN_PX = 134;
-const SCORING_CONFIDENCE_MIN_PX = 110;
-
-/**
- * Metric columns use intrinsic width from cell content.
- * `width: 0.01%` is a common auto-table hint so extra horizontal space is not assigned here first.
- */
-const scoringMetricThSx = {
-  px: 2,
-  width: "0.01%",
-  maxWidth: "max-content",
-  boxSizing: "border-box" as const,
-  overflow: "visible",
-  whiteSpace: "normal" as const,
-  wordBreak: "break-word" as const,
-  overflowWrap: "break-word" as const,
-};
-
-const scoringMetricTdSx = {
-  px: 2,
-  py: 0,
-  width: "0.01%",
-  maxWidth: "max-content",
-  verticalAlign: "middle" as const,
-  boxSizing: "border-box" as const,
-  overflow: "visible",
-  whiteSpace: "nowrap" as const,
-};
-
-const scoringImpactMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_IMPACT_MIN_PX };
-const scoringImpactMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_IMPACT_MIN_PX };
-const scoringThreatMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_THREAT_MIN_PX };
-const scoringThreatMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_THREAT_MIN_PX };
-const scoringVulnerabilityMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_VULNERABILITY_MIN_PX };
-const scoringVulnerabilityMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_VULNERABILITY_MIN_PX };
-const scoringLikelihoodMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_LIKELIHOOD_MIN_PX };
-const scoringLikelihoodMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_LIKELIHOOD_MIN_PX };
-const scoringCyberRiskScoreMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_CYBER_RISK_SCORE_MIN_PX };
-const scoringCyberRiskScoreMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_CYBER_RISK_SCORE_MIN_PX };
-const scoringConfidenceMetricThSx = { ...scoringMetricThSx, minWidth: SCORING_CONFIDENCE_MIN_PX };
-const scoringConfidenceMetricTdSx = { ...scoringMetricTdSx, minWidth: SCORING_CONFIDENCE_MIN_PX };
-
-const scoringNameHeadCellSx = ({ tokens: t }: Theme) => ({
-  position: "sticky" as const,
-  left: 0,
-  zIndex: 3,
-  width: SCORING_NAME_COL_WIDTH_PX,
-  minWidth: SCORING_NAME_COL_WIDTH_PX,
-  maxWidth: SCORING_NAME_COL_WIDTH_PX,
-  boxSizing: "border-box" as const,
-  bgcolor: t.semantic.color.background.container.value,
-  whiteSpace: "normal" as const,
-  wordBreak: "break-word" as const,
-  overflowWrap: "break-word" as const,
-  overflow: "visible" as const,
-});
-
-const scoringNameBodyCellSx = ({ tokens: t }: Theme) => ({
-  position: "sticky" as const,
-  left: 0,
-  zIndex: 2,
-  bgcolor: t.semantic.color.background.base.value,
-  width: SCORING_NAME_COL_WIDTH_PX,
-  minWidth: SCORING_NAME_COL_WIDTH_PX,
-  maxWidth: SCORING_NAME_COL_WIDTH_PX,
-  boxSizing: "border-box" as const,
-  whiteSpace: "normal" as const,
-  wordBreak: "break-word" as const,
-  overflowWrap: "break-word" as const,
-  overflow: "visible" as const,
-});
-
-/** Cyber risk (parent) rows — subtle surface band */
-const scoringCyberRiskRowBodyCellBgSx = ({ tokens: t }: Theme) => ({
-  bgcolor: t.semantic.color.surface.variant.value,
-});
-
-/** Scenario rows — lighter band under parent */
-const scoringScenarioRowBodyCellBgSx = ({ tokens: t }: Theme) => ({
-  bgcolor: t.semantic.color.background.base.value,
-});
+const scoringImpactMetricThSx = assessmentMetricThSx(ASSESSMENT_IMPACT_MIN_PX);
+const scoringImpactMetricTdSx = assessmentMetricTdSx(ASSESSMENT_IMPACT_MIN_PX);
+const scoringThreatMetricThSx = assessmentMetricThSx(ASSESSMENT_THREAT_MIN_PX);
+const scoringThreatMetricTdSx = assessmentMetricTdSx(ASSESSMENT_THREAT_MIN_PX);
+const scoringVulnerabilityMetricThSx = assessmentMetricThSx(ASSESSMENT_VULNERABILITY_MIN_PX);
+const scoringVulnerabilityMetricTdSx = assessmentMetricTdSx(ASSESSMENT_VULNERABILITY_MIN_PX);
+const scoringLikelihoodMetricThSx = assessmentMetricThSx(ASSESSMENT_LIKELIHOOD_MIN_PX);
+const scoringLikelihoodMetricTdSx = assessmentMetricTdSx(ASSESSMENT_LIKELIHOOD_MIN_PX);
+const scoringCyberRiskScoreMetricThSx = assessmentMetricThSx(ASSESSMENT_CYBER_RISK_SCORE_MIN_PX);
+const scoringCyberRiskScoreMetricTdSx = assessmentMetricTdSx(ASSESSMENT_CYBER_RISK_SCORE_MIN_PX);
+const scoringConfidenceMetricThSx = assessmentMetricThSx(ASSESSMENT_CONFIDENCE_MIN_PX);
+const scoringConfidenceMetricTdSx = assessmentMetricTdSx(ASSESSMENT_CONFIDENCE_MIN_PX);
 
 function RiskLegendCell({ value }: { value: ScoringTableScoreValue }) {
   return (
@@ -203,16 +142,6 @@ function RiskLegendCell({ value }: { value: ScoringTableScoreValue }) {
     </Box>
   );
 }
-
-const scoreTableCellContentSx = {
-  display: "flex",
-  alignItems: "center",
-  width: "max-content",
-  maxWidth: "100%",
-  minWidth: 0,
-  overflow: "visible",
-  boxSizing: "border-box" as const,
-};
 
 function MetricLegendCell({ value }: { value: ScoringTableScoreValue }) {
   return (
@@ -489,90 +418,6 @@ function aggregateAverageParent(scenariosInGroup: ScoringTableRow[]): Record<Met
   };
 }
 
-function NameCell({
-  row,
-  expanded,
-  onToggle,
-}: {
-  row: ScoringTableRow;
-  expanded: boolean;
-  onToggle: () => void;
-}) {
-  const isGroup = row.kind === "cyberRisk";
-  return (
-    <Stack
-      direction="row"
-      alignItems={isGroup ? "center" : "flex-start"}
-      gap={1}
-      sx={(theme) => ({
-        py: 1,
-        minHeight: 56,
-        pl: isGroup ? 0 : `calc(${theme.spacing(4)} + 10px)`,
-      })}
-    >
-      {isGroup ? (
-        <IconButton
-          size="small"
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggle();
-          }}
-          aria-expanded={expanded}
-          aria-label={expanded ? "Collapse cyber risk" : "Expand cyber risk"}
-          sx={{ p: 0.5 }}
-        >
-          <Box
-            component="span"
-            aria-hidden
-            sx={{
-              display: "inline-flex",
-              transform: expanded ? "rotate(0deg)" : "rotate(-90deg)",
-              transition: "transform 0.2s",
-            }}
-          >
-            <ExpandDownIcon />
-          </Box>
-        </IconButton>
-      ) : null}
-      <Stack gap={0.25} sx={{ minWidth: 0, flex: 1 }}>
-        <Box
-          sx={({ tokens: t }) => ({
-            alignSelf: "flex-start",
-            px: 0.5,
-            py: 0.25,
-            borderRadius: t.semantic.radius.sm.value,
-            bgcolor: t.semantic.color.surface.variant.value,
-          })}
-        >
-          <Typography
-            sx={({ tokens: t }) => ({
-              fontSize: t.semantic.font.label.sm.fontSize.value,
-              lineHeight: t.semantic.font.label.sm.lineHeight.value,
-              letterSpacing: t.semantic.font.label.sm.letterSpacing.value,
-              fontWeight: 600,
-              color: t.semantic.color.type.default.value,
-            })}
-          >
-            {row.tag}
-          </Typography>
-        </Box>
-        <Box
-          sx={{
-            minWidth: 0,
-            whiteSpace: "normal",
-            wordBreak: "break-word",
-            overflowWrap: "break-word",
-            "& .MuiTypography-root": { whiteSpace: "normal" },
-            "& .MuiLink-root": { whiteSpace: "normal" },
-          }}
-        >
-          {row.title}
-        </Box>
-      </Stack>
-    </Stack>
-  );
-}
-
 function MetricScoreSkeleton() {
   return (
     <Box sx={{ minHeight: 56, display: "flex", alignItems: "center", py: 1 }}>
@@ -764,7 +609,7 @@ export function ScoringTable({
                   },
                 })}
               >
-                <TableCell sx={scoringNameHeadCellSx}>Name</TableCell>
+                <TableCell sx={assessmentTreeNameHeadCellSx}>Name</TableCell>
                 <TableCell sx={scoringImpactMetricThSx}>Impact</TableCell>
                 <TableCell sx={scoringThreatMetricThSx}>Threat severity</TableCell>
                 <TableCell sx={scoringVulnerabilityMetricThSx}>Vulnerability severity</TableCell>
@@ -787,26 +632,29 @@ export function ScoringTable({
             </TableHead>
             <TableBody>
               {aiScoringPhase === "processing"
-                ? visibleRows.map((row) => (
-                    <TableRow key={row.id} hover={false}>
+                ? visibleRows.map((row, idx) => {
+                    const connectorType = getConnectorType(row, visibleRows, idx);
+                    return (
+                      <TableRow key={row.id} hover={false}>
+                        <TableCell
+                          sx={[
+                            assessmentTreeNameBodyCellSx,
+                            assessmentTreeRowBodyCellBgSx,
+                          ]}
+                        >
+                          <AssessmentTreeNameCell
+                            kind={row.kind}
+                            tag={row.tag}
+                            title={row.title}
+                            expanded={expanded[row.groupId] !== false}
+                            onToggle={() => toggleGroup(row.groupId)}
+                            connectorType={connectorType}
+                          />
+                        </TableCell>
                       <TableCell
                         sx={[
-                          scoringNameBodyCellSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
-                        ]}
-                      >
-                        <NameCell
-                          row={row}
-                          expanded={expanded[row.groupId] !== false}
-                          onToggle={() => toggleGroup(row.groupId)}
-                        />
-                      </TableCell>
-                      <TableCell
-                        sx={[
-                          scoringMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          scoringImpactMetricTdSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -814,8 +662,7 @@ export function ScoringTable({
                       <TableCell
                         sx={[
                           scoringThreatMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -823,8 +670,7 @@ export function ScoringTable({
                       <TableCell
                         sx={[
                           scoringVulnerabilityMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -832,8 +678,7 @@ export function ScoringTable({
                       <TableCell
                         sx={[
                           scoringLikelihoodMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -841,8 +686,7 @@ export function ScoringTable({
                       <TableCell
                         sx={[
                           scoringCyberRiskScoreMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -850,8 +694,7 @@ export function ScoringTable({
                       <TableCell
                         sx={[
                           scoringConfidenceMetricTdSx,
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <MetricScoreSkeleton />
@@ -869,8 +712,7 @@ export function ScoringTable({
                             bgcolor: t.semantic.color.background.base.value,
                             verticalAlign: "middle",
                           }),
-                          row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                          row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                          assessmentTreeRowBodyCellBgSx,
                         ]}
                       >
                         <IconButton size="small" aria-label="Row actions" disabled>
@@ -878,8 +720,10 @@ export function ScoringTable({
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))
-                : visibleRows.map((row) => {
+                    );
+                  })
+                : visibleRows.map((row, idx) => {
+                    const connectorType = getConnectorType(row, visibleRows, idx);
                     const isScenario = row.kind === "scenario";
                     const parentAgg =
                       row.kind === "cyberRisk" ? aggregatedByGroupId.get(row.groupId) : undefined;
@@ -936,22 +780,23 @@ export function ScoringTable({
                       >
                         <TableCell
                           sx={[
-                            scoringNameBodyCellSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeNameBodyCellSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
-                          <NameCell
-                            row={row}
+                          <AssessmentTreeNameCell
+                            kind={row.kind}
+                            tag={row.tag}
+                            title={row.title}
                             expanded={expanded[row.groupId] !== false}
                             onToggle={() => toggleGroup(row.groupId)}
+                            connectorType={connectorType}
                           />
                         </TableCell>
                         <TableCell
                           sx={[
                             scoringImpactMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <Box sx={scoreTableCellContentSx}>
@@ -961,8 +806,7 @@ export function ScoringTable({
                         <TableCell
                           sx={[
                             scoringThreatMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <MetricLegendCell value={threatValue} />
@@ -970,8 +814,7 @@ export function ScoringTable({
                         <TableCell
                           sx={[
                             scoringVulnerabilityMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <MetricLegendCell value={vulnerabilityValue} />
@@ -979,8 +822,7 @@ export function ScoringTable({
                         <TableCell
                           sx={[
                             scoringLikelihoodMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <MetricLegendCell value={likelihoodValue} />
@@ -988,8 +830,7 @@ export function ScoringTable({
                         <TableCell
                           sx={[
                             scoringCyberRiskScoreMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <MetricLegendCell value={cyberRiskScoreValue} />
@@ -997,8 +838,7 @@ export function ScoringTable({
                         <TableCell
                           sx={[
                             scoringConfidenceMetricTdSx,
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                         >
                           <ConfidenceCell
@@ -1018,8 +858,7 @@ export function ScoringTable({
                               bgcolor: t.semantic.color.background.base.value,
                               verticalAlign: "middle",
                             }),
-                            row.kind === "cyberRisk" && scoringCyberRiskRowBodyCellBgSx,
-                            row.kind === "scenario" && scoringScenarioRowBodyCellBgSx,
+                            assessmentTreeRowBodyCellBgSx,
                           ]}
                           onClick={(e) => e.stopPropagation()}
                         >

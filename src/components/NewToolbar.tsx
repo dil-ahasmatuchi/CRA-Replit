@@ -1,6 +1,12 @@
+import { useCallback, useState, type MouseEvent } from "react";
 import {
+  Box,
   Button,
+  Checkbox,
   InputAdornment,
+  ListItemText,
+  Menu,
+  MenuItem,
   TextField,
 } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material/styles";
@@ -171,5 +177,179 @@ export default function NewToolbar({
         </Button>
       ) : null}
     </Toolbar>
+  );
+}
+
+export type StandaloneToolbarColumnDef = {
+  field: string;
+  headerName: string;
+};
+
+type NewToolbarStandaloneBaseProps = NewToolbarBaseProps & {
+  searchValue: string;
+  onSearchChange: (value: string) => void;
+  columns: StandaloneToolbarColumnDef[];
+  hiddenColumns: ReadonlySet<string>;
+  onHiddenColumnsChange: (hiddenColumns: Set<string>) => void;
+};
+
+export type NewToolbarStandaloneProps = NewToolbarStandaloneBaseProps &
+  (
+    | { showFilterButton: false; onOpenFilters?: () => void }
+    | { showFilterButton?: true; onOpenFilters: () => void }
+  );
+
+const standaloneToolbarSx = {
+  minHeight: 40,
+  height: 40,
+  boxSizing: "border-box" as const,
+  display: "flex",
+  alignItems: "center",
+  gap: 1,
+  px: 1,
+  flexWrap: "wrap" as const,
+};
+
+/**
+ * Toolbar for tables that are not MUI DataGrid: controlled quick search, optional Filter /
+ * Clear filters, and a column-visibility menu (checkboxes per hideable column).
+ */
+export function NewToolbarStandalone({
+  searchLabel,
+  searchPlaceholder = DEFAULT_SEARCH_PLACEHOLDER,
+  searchFieldSx = DEFAULT_SEARCH_FIELD_SX,
+  filterCriteriaCount = 0,
+  onClearFilters,
+  showFilterButton: showFilterButtonProp,
+  onOpenFilters,
+  searchValue,
+  onSearchChange,
+  columns,
+  hiddenColumns,
+  onHiddenColumnsChange,
+}: NewToolbarStandaloneProps) {
+  const showFilterButton = showFilterButtonProp !== false;
+  const [columnsMenuAnchor, setColumnsMenuAnchor] = useState<HTMLElement | null>(null);
+
+  const textFieldLabel: string | undefined =
+    searchLabel != null && searchLabel !== "" ? searchLabel : undefined;
+
+  const hasFilterCriteria = filterCriteriaCount > 0;
+  const filterButtonLabel = hasFilterCriteria ? `Filter (${filterCriteriaCount})` : "Filter";
+  const filterButtonAriaLabel = hasFilterCriteria
+    ? `Show filters, ${filterCriteriaCount} filter criteria applied`
+    : "Show filters";
+
+  const showClearFilters = hasFilterCriteria && Boolean(onClearFilters);
+
+  const openColumnsMenu = useCallback((e: MouseEvent<HTMLElement>) => {
+    setColumnsMenuAnchor(e.currentTarget);
+  }, []);
+
+  const closeColumnsMenu = useCallback(() => {
+    setColumnsMenuAnchor(null);
+  }, []);
+
+  const toggleColumn = useCallback(
+    (field: string) => {
+      const next = new Set(hiddenColumns);
+      if (next.has(field)) {
+        next.delete(field);
+      } else {
+        next.add(field);
+      }
+      onHiddenColumnsChange(next);
+    },
+    [hiddenColumns, onHiddenColumnsChange],
+  );
+
+  const filterButton = showFilterButton ? (
+    <Button
+      type="button"
+      startIcon={
+        <FilterIcon variant={hasFilterCriteria ? "filled" : "outlined"} size="lg" aria-hidden />
+      }
+      aria-label={filterButtonAriaLabel}
+      onClick={() => onOpenFilters?.()}
+      sx={{
+        display: "inline-flex",
+        flexDirection: "row",
+        alignItems: "center",
+        px: 0.5,
+        columnGap: 0.5,
+      }}
+    >
+      {filterButtonLabel}
+    </Button>
+  ) : null;
+
+  return (
+    <Box sx={standaloneToolbarSx}>
+      <TextField
+        value={searchValue}
+        onChange={(e) => onSearchChange(e.target.value)}
+        label={textFieldLabel}
+        placeholder={searchPlaceholder}
+        size="small"
+        sx={searchFieldSx}
+        slotProps={{
+          input: {
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon />
+              </InputAdornment>
+            ),
+          },
+        }}
+      />
+      {filterButton}
+      <Button
+        type="button"
+        startIcon={<ColumnsIcon />}
+        aria-label="Select columns"
+        aria-haspopup="true"
+        aria-expanded={columnsMenuAnchor != null ? true : undefined}
+        aria-controls={columnsMenuAnchor != null ? "new-toolbar-columns-menu" : undefined}
+        onClick={openColumnsMenu}
+        sx={{
+          display: "inline-flex",
+          flexDirection: "row",
+          alignItems: "center",
+          px: 0.5,
+          columnGap: 0.5,
+        }}
+      >
+        Columns
+      </Button>
+      <Menu
+        id="new-toolbar-columns-menu"
+        anchorEl={columnsMenuAnchor}
+        open={columnsMenuAnchor != null}
+        onClose={closeColumnsMenu}
+        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+        transformOrigin={{ vertical: "top", horizontal: "left" }}
+      >
+        {columns.map((col) => {
+          const visible = !hiddenColumns.has(col.field);
+          return (
+            <MenuItem key={col.field} dense onClick={() => toggleColumn(col.field)}>
+              <Checkbox size="small" checked={visible} tabIndex={-1} disableRipple />
+              <ListItemText primary={col.headerName} />
+            </MenuItem>
+          );
+        })}
+      </Menu>
+      {showClearFilters ? (
+        <Button
+          type="button"
+          variant="text"
+          onClick={onClearFilters}
+          aria-label="Clear filters"
+          sx={{ ml: 0.5, whiteSpace: "nowrap" }}
+        >
+          Clear filters
+        </Button>
+      ) : null}
+    </Box>
   );
 }
